@@ -6,10 +6,10 @@ import com.arthur.notificationservice.service.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -21,10 +21,13 @@ public class EmailService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final JavaMailSender mailSender;
 
-    public EmailService(NotificationRepository notificationRepository, UserRepository userRepository) {
+
+    public EmailService(NotificationRepository notificationRepository, UserRepository userRepository, JavaMailSender mailSender) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.mailSender = mailSender;
     }
 
     @Async
@@ -55,6 +58,7 @@ public class EmailService {
         message.setFrom(fromEmail);
         message.setSubject("Nasa Asteroid Collision Event");
         message.setText(text);
+        mailSender.send(message);
     }
 
     private String createEmailText(){
