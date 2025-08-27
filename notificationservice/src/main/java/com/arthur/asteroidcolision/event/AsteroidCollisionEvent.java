@@ -1,4 +1,4 @@
-package com.arthur.notificationservice.asteroidalert.event;
+package com.arthur.asteroidcolision.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

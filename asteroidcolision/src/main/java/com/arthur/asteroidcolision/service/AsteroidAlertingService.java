@@ -42,18 +42,18 @@ public class AsteroidAlertingService {
 
         log.info("Sending {} asteroid collision events to Kafka", asteroidCollisionEvents.size());
         asteroidCollisionEvents.forEach( event -> {
-            kafkaTemplate.send("asteroid-alerts", event);
+            kafkaTemplate.send("asteroid-alert", event);
             log.info("Asteroid alert sent to Kafka Topic {}",event);
         });
     }
 
     private List<AsteroidCollisionEvent> createEventListOfDangerousAsteroids(final List<Asteroid> dangerousAsteroid) {
-        return  dangerousAsteroid.stream()
-                .map( asteroid -> {
+        return dangerousAsteroid.stream()
+                .map(asteroid ->{
                     if (asteroid.isPotentiallyHazardous()) {
                         return AsteroidCollisionEvent.builder()
                                 .asteroidName(asteroid.getName())
-                                .closeApproachDate(asteroid.getCloseApproachDataList().getFirst().getMissDistance().getKilometers())
+                                .closeApproachDate(asteroid.getCloseApproachDataList().getFirst().getCloseApproachDate().toString())
                                 .missDistanceKilometers(asteroid.getCloseApproachDataList().getFirst().getMissDistance().getKilometers())
                                 .estimatedDiameterAvgMeters((asteroid.getEstimatedDiameter().getMeters().getMinDiameter() +
                                         asteroid.getEstimatedDiameter().getMeters().getMaxDiameter()) / 2)
@@ -62,6 +62,5 @@ public class AsteroidAlertingService {
                     return null;
                 })
                 .toList();
-
     }
 }

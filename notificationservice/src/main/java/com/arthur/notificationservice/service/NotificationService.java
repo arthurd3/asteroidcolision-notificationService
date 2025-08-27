@@ -1,6 +1,6 @@
 package com.arthur.notificationservice.service;
 
-import com.arthur.notificationservice.asteroidalert.event.AsteroidCollisionEvent;
+import com.arthur.asteroidcolision.event.AsteroidCollisionEvent;
 import com.arthur.notificationservice.service.entity.Notification;
 import com.arthur.notificationservice.service.repository.NotificationRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +16,11 @@ import java.time.LocalDate;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final EmailService emailService;
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    public NotificationService(NotificationRepository notificationRepository, EmailService emailService) {
         this.notificationRepository = notificationRepository;
+        this.emailService = emailService;
     }
 
     @KafkaListener(topics = "asteroid-alert" , groupId = "notification-service")
@@ -38,7 +40,7 @@ public class NotificationService {
 
     }
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 100000)
     public void sendAlertEmail(){
         log.info("Send Alert Email");
         emailService.sendAsteroidAlertEmail();
