@@ -22,7 +22,7 @@ public class Notification {
     private Long id;
 
     private String asteroidName;
-    private LocalDate timestamp;
+    private LocalDate closeApproachDate;
     private BigDecimal missDistanceKilometers;
     private double estimatedDiameterAvgMeters;
     private boolean emailSent;
