@@ -4,6 +4,8 @@ import com.arthur.notificationservice.service.entity.Notification;
 import com.arthur.notificationservice.service.repository.NotificationRepository;
 import com.arthur.notificationservice.service.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,9 @@ import java.util.List;
 @Service
 @Slf4j
 public class EmailService {
+
+    @Value("${email.service.from.email}")
+    private String fromEmail;
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -33,13 +38,26 @@ public class EmailService {
 
 
         final List<String> toEmails = userRepository.findAllEmailsAndNotificationEnabled();
+
         if(toEmails.isEmpty()){
             log.info("Dont have Users to send Alert Email");
             return;
         }
+
+        toEmails.forEach(toEmail -> sendEmail(toEmail , text));
+        log.info("Email sent to: {} users", toEmails.size());
+
     }
 
-    public String createEmailText(){
+    private void sendEmail(final String toEmail, final String text){
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setFrom(fromEmail);
+        message.setSubject("Nasa Asteroid Collision Event");
+        message.setText(text);
+    }
+
+    private String createEmailText(){
         List<Notification> notifications = notificationRepository.findByEmailSent(false);
 
         if(notifications.isEmpty()){
