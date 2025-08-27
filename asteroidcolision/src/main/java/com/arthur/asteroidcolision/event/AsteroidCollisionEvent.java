@@ -16,4 +16,5 @@ public class AsteroidCollisionEvent {
     private String closeApproachDate;
     private String missDistanceKilometers;
     private double estimatedDiameterAvgMeters;
+
 }
