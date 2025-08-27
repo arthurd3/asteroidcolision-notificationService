@@ -54,6 +54,7 @@ public class AsteroidAlertingService {
                         return AsteroidCollisionEvent.builder()
                                 .asteroidName(asteroid.getName())
                                 .closeApproachDate(asteroid.getCloseApproachDataList().getFirst().getMissDistance().getKilometers())
+                                .missDistanceKilometers(asteroid.getCloseApproachDataList().getFirst().getMissDistance().getKilometers())
                                 .estimatedDiameterAvgMeters((asteroid.getEstimatedDiameter().getMeters().getMinDiameter() +
                                         asteroid.getEstimatedDiameter().getMeters().getMaxDiameter()) / 2)
                                 .build();
