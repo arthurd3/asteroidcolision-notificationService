@@ -2,6 +2,8 @@ package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.nasa.dto.epic.EpicImage;
+import com.arthur.asteroid.alerting.config.NasaCacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class RestNasaEpicClient implements NasaEpicClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.EPIC_FRAMES)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
     public List<EpicImage> naturalImages(final LocalDate date) {
@@ -47,6 +50,7 @@ public class RestNasaEpicClient implements NasaEpicClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.EPIC_DATES)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
     public List<LocalDate> availableNaturalDates() {
@@ -56,6 +60,7 @@ public class RestNasaEpicClient implements NasaEpicClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.EPIC_IMAGE)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
     public byte[] naturalImagePng(final String archivePath) {

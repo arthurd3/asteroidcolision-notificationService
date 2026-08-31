@@ -67,6 +67,16 @@ asteroid:
       # archive PNGs are a couple of megabytes, so the read budget is generous
       timeouts: { connect: 3s, read: 30s }
       image-cache-ttl: 7d
+    cache:
+      # Short on purpose. Long enough that clicking around the front end costs one
+      # upstream call per resource rather than one per click, short enough that
+      # nobody has to reason about staleness. NASA's data changes over days.
+      ttl: 10m
+      maximum-size: 200
+      # archive frames never change once published
+      image-ttl: 24h
+      # each entry is roughly 2 MB, so this bound is about heap, not hit rate
+      image-maximum-size: 40
   alerting:
     topic: asteroid-alert
     partitions: 3
@@ -136,6 +146,12 @@ management:
   health:
     circuitbreakers:
       enabled: true
+  # Caffeine's recordStats() feeds cache.gets / cache.puts / cache.evictions on
+  # /actuator/prometheus, so "is the cache doing anything" is a question with an
+  # answer rather than a guess.
+  metrics:
+    enable:
+      cache: true
 
 logging:
   level:

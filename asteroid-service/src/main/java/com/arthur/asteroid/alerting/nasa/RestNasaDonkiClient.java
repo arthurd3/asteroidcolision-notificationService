@@ -5,10 +5,12 @@ import com.arthur.asteroid.alerting.nasa.dto.donki.CoronalMassEjection;
 import com.arthur.asteroid.alerting.nasa.dto.donki.GeomagneticStorm;
 import com.arthur.asteroid.alerting.nasa.dto.donki.SolarFlare;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import com.arthur.asteroid.alerting.config.NasaCacheConfig;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -50,6 +52,7 @@ public class RestNasaDonkiClient implements NasaDonkiClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.DONKI_CME)
     @Bulkhead(name = RESILIENCE_NAME)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
@@ -59,6 +62,7 @@ public class RestNasaDonkiClient implements NasaDonkiClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.DONKI_GST)
     @Bulkhead(name = RESILIENCE_NAME)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
@@ -68,6 +72,7 @@ public class RestNasaDonkiClient implements NasaDonkiClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.DONKI_FLR)
     @Bulkhead(name = RESILIENCE_NAME)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)

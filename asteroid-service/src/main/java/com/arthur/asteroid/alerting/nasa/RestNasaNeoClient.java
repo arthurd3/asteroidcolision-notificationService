@@ -4,6 +4,8 @@ import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.nasa.dto.neo.Asteroid;
 import com.arthur.asteroid.alerting.nasa.dto.neo.NasaNeoResponse;
 import com.arthur.asteroid.alerting.nasa.dto.neo.NeoBrowsePage;
+import com.arthur.asteroid.alerting.config.NasaCacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +56,15 @@ public class RestNasaNeoClient implements NasaNeoClient {
         this.endpoint = new NasaEndpoint(restClient, properties.apiKey(), "NASA NEO feed");
     }
 
+    /**
+     * Deliberately NOT cached, unlike lookup and browse.
+     *
+     * <p>This is the method the alerting scan calls. A cached scan would publish
+     * events from a window that was read minutes ago and report them as current,
+     * which defeats the point of scanning. Read-only callers pay one upstream call
+     * per request; that is the right trade for the one method with a side effect
+     * downstream.
+     */
     @Override
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
@@ -81,6 +92,7 @@ public class RestNasaNeoClient implements NasaNeoClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.NEO_LOOKUP)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
     public Asteroid lookup(final String neoReferenceId) {
@@ -95,6 +107,7 @@ public class RestNasaNeoClient implements NasaNeoClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.NEO_BROWSE)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
     public NeoBrowsePage browse(final int page, final int size) {

@@ -2,6 +2,8 @@ package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.nasa.dto.apod.ApodEntry;
+import com.arthur.asteroid.alerting.config.NasaCacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ public class RestNasaApodClient implements NasaApodClient {
     }
 
     @Override
+    @Cacheable(cacheNames = NasaCacheConfig.APOD)
     @Retry(name = RESILIENCE_NAME)
     @CircuitBreaker(name = RESILIENCE_NAME)
     public ApodEntry pictureOfTheDay(final LocalDate date) {

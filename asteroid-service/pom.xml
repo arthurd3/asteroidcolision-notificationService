@@ -45,6 +45,20 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
 
+    <!-- Caching is not an optimisation here, it is what makes the service usable.
+         DEMO_KEY allows 30 requests an hour across EVERY api.nasa.gov endpoint, and
+         one load of the front page spends four of them. Caffeine rather than the
+         default ConcurrentHashMap because that one has no expiry at all: entries
+         would live until restart and the picture of the day would be wrong tomorrow. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+
     <!-- Resilience4j advice is @Aspect-based; spring-boot-starter-aop is gone in Boot 4 -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

@@ -19,6 +19,12 @@ import java.util.Optional;
  * <p>The cost of that choice is that {@link #orbitalData()} is null on feed
  * responses. That is stated here rather than left for a caller to discover.
  *
+ * <p>{@code potentiallyHazardous} is a primitive on purpose, and it is the only
+ * required field here. A response missing it fails to parse rather than defaulting
+ * to false - which is the behaviour you want, because this flag decides whether an
+ * alert is published. Silently treating "NASA did not say" as "not hazardous" is the
+ * one wrong answer. Every other field is boxed and may legitimately be absent.
+ *
  * @param orbitalData     null on feed responses; populated by lookup and browse
  * @param sentryObject    whether NASA's Sentry system is tracking this object for
  *                        long-term impact risk. Boxed, because the feed omits it
