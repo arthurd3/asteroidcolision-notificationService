@@ -2,6 +2,8 @@ package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaPropertiesFixture;
 import com.arthur.asteroid.alerting.nasa.dto.donki.CoronalMassEjection;
+import com.arthur.asteroid.alerting.nasa.dto.donki.GeomagneticStorm;
+import com.arthur.asteroid.alerting.nasa.dto.donki.SolarFlare;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -133,6 +135,80 @@ class RestNasaDonkiClientTest {
                 .withQueryParam("startDate", equalTo("2026-08-01"))
                 .withQueryParam("endDate", equalTo("2026-08-31"))
                 .withQueryParam("api_key", equalTo(NasaPropertiesFixture.API_KEY)));
+    }
+
+    // ------------------------------------------------------------------ GST / FLR
+    //
+    // These two parse HAND-WRITTEN fixtures, not captured responses, so they prove the
+    // records parse those files and nothing more. If a component name does not match
+    // what DONKI really sends it deserialises to null in production and these tests
+    // still pass. See src/test/resources/nasa/README-fixtures.md.
+
+    @Test
+    @DisplayName("parses the geomagnetic-storm fixture, including the linked CME")
+    void parsesGeomagneticStorms() throws IOException {
+        stubPath(RestNasaDonkiClient.GST_PATH, fixture("nasa/donki-gst.json"));
+
+        final List<GeomagneticStorm> storms =
+                client.geomagneticStorms(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+
+        assertThat(storms).singleElement().satisfies(storm -> {
+            assertThat(storm.gstId()).isEqualTo("2026-08-12T18:00:00-GST-001");
+            assertThat(storm.startTime()).isEqualTo(OffsetDateTime.parse("2026-08-12T18:00Z"));
+            assertThat(storm.kpIndexReadings()).hasSize(3);
+            // the relationship worth having: a storm points back at the CME that caused it
+            assertThat(storm.linkedEvents()).singleElement()
+                    .extracting(e -> e.activityId()).isEqualTo("2026-08-11T03:36:00-CME-001");
+            assertThat(storm.peakKpIndex()).contains(7.33);
+        });
+    }
+
+    @Test
+    @DisplayName("parses the solar-flare fixture, including a flare still in progress")
+    void parsesSolarFlares() throws IOException {
+        stubPath(RestNasaDonkiClient.FLR_PATH, fixture("nasa/donki-flr.json"));
+
+        final List<SolarFlare> flares =
+                client.solarFlares(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+
+        assertThat(flares).hasSize(2);
+        assertThat(flares.getFirst()).satisfies(flare -> {
+            assertThat(flare.flrId()).isEqualTo("2026-08-11T02:58:00-FLR-001");
+            assertThat(flare.classType()).isEqualTo("M1.4");
+            assertThat(flare.classLetter()).isEqualTo("M");
+            assertThat(flare.activeRegionNum()).isEqualTo(14208);
+            assertThat(flare.peakTime()).isEqualTo(OffsetDateTime.parse("2026-08-11T03:14Z"));
+        });
+        assertThat(flares.get(1)).satisfies(flare -> {
+            // a flare that had not finished when DONKI was asked has no endTime
+            assertThat(flare.endTime()).isNull();
+            assertThat(flare.activeRegionNum()).isNull();
+            assertThat(flare.linkedEvents()).isEmpty();
+            assertThat(flare.classLetter()).isEqualTo("X");
+        });
+    }
+
+    @Test
+    @DisplayName("every DONKI endpoint sends the same camelCase window parameters")
+    void allEndpointsSendTheSameParameters() {
+        stubPath(RestNasaDonkiClient.GST_PATH, "[]");
+        stubPath(RestNasaDonkiClient.FLR_PATH, "[]");
+
+        client.geomagneticStorms(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+        client.solarFlares(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+
+        for (final String path : List.of(RestNasaDonkiClient.GST_PATH, RestNasaDonkiClient.FLR_PATH)) {
+            wireMock.verify(getRequestedFor(urlPathEqualTo(path))
+                    .withQueryParam("startDate", equalTo("2026-08-01"))
+                    .withQueryParam("endDate", equalTo("2026-08-31")));
+        }
+    }
+
+    private static void stubPath(final String path, final String body) {
+        wireMock.stubFor(get(urlPathEqualTo(path))
+                .willReturn(aResponse().withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(body)));
     }
 
     private static void stub(final String body) {

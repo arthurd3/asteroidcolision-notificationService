@@ -3,6 +3,8 @@ package com.arthur.asteroid.alerting.web;
 import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.nasa.NasaDonkiClient;
 import com.arthur.asteroid.alerting.nasa.dto.donki.CoronalMassEjection;
+import com.arthur.asteroid.alerting.nasa.dto.donki.GeomagneticStorm;
+import com.arthur.asteroid.alerting.nasa.dto.donki.SolarFlare;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,6 +52,34 @@ public class DonkiController {
 
         final Window window = window(from, to);
         return ResponseEntity.ok(donkiClient.coronalMassEjections(window.from(), window.to()));
+    }
+
+    /**
+     * Geomagnetic storms in the window.
+     *
+     * <p>The response shape is unverified - see {@link GeomagneticStorm}.
+     */
+    @GetMapping("/gst")
+    public ResponseEntity<List<GeomagneticStorm>> geomagneticStorms(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        final Window window = window(from, to);
+        return ResponseEntity.ok(donkiClient.geomagneticStorms(window.from(), window.to()));
+    }
+
+    /**
+     * Solar flares in the window.
+     *
+     * <p>The response shape is unverified - see {@link SolarFlare}.
+     */
+    @GetMapping("/flr")
+    public ResponseEntity<List<SolarFlare>> solarFlares(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+        final Window window = window(from, to);
+        return ResponseEntity.ok(donkiClient.solarFlares(window.from(), window.to()));
     }
 
     /**

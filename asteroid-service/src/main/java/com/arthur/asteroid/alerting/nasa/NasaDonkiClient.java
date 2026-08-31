@@ -1,6 +1,8 @@
 package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.nasa.dto.donki.CoronalMassEjection;
+import com.arthur.asteroid.alerting.nasa.dto.donki.GeomagneticStorm;
+import com.arthur.asteroid.alerting.nasa.dto.donki.SolarFlare;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,4 +20,18 @@ public interface NasaDonkiClient {
 
     /** Coronal mass ejections that began within the window. */
     List<CoronalMassEjection> coronalMassEjections(LocalDate from, LocalDate to);
+
+    /**
+     * Geomagnetic storms that began within the window.
+     *
+     * <p>Note the record's shape is unverified - see {@link GeomagneticStorm}.
+     */
+    List<GeomagneticStorm> geomagneticStorms(LocalDate from, LocalDate to);
+
+    /**
+     * Solar flares that began within the window.
+     *
+     * <p>Note the record's shape is unverified - see {@link SolarFlare}.
+     */
+    List<SolarFlare> solarFlares(LocalDate from, LocalDate to);
 }

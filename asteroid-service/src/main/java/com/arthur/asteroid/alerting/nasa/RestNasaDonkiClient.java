@@ -2,6 +2,8 @@ package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.nasa.dto.donki.CoronalMassEjection;
+import com.arthur.asteroid.alerting.nasa.dto.donki.GeomagneticStorm;
+import com.arthur.asteroid.alerting.nasa.dto.donki.SolarFlare;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -37,6 +39,8 @@ public class RestNasaDonkiClient implements NasaDonkiClient {
 
     static final String RESILIENCE_NAME = "nasaDonki";
     static final String CME_PATH = "/DONKI/CME";
+    static final String GST_PATH = "/DONKI/GST";
+    static final String FLR_PATH = "/DONKI/FLR";
 
     private final NasaEndpoint endpoint;
 
@@ -51,6 +55,24 @@ public class RestNasaDonkiClient implements NasaDonkiClient {
     @CircuitBreaker(name = RESILIENCE_NAME)
     public List<CoronalMassEjection> coronalMassEjections(final LocalDate from, final LocalDate to) {
         return query(CME_PATH, from, to, new ParameterizedTypeReference<>() {
+        });
+    }
+
+    @Override
+    @Bulkhead(name = RESILIENCE_NAME)
+    @Retry(name = RESILIENCE_NAME)
+    @CircuitBreaker(name = RESILIENCE_NAME)
+    public List<GeomagneticStorm> geomagneticStorms(final LocalDate from, final LocalDate to) {
+        return query(GST_PATH, from, to, new ParameterizedTypeReference<>() {
+        });
+    }
+
+    @Override
+    @Bulkhead(name = RESILIENCE_NAME)
+    @Retry(name = RESILIENCE_NAME)
+    @CircuitBreaker(name = RESILIENCE_NAME)
+    public List<SolarFlare> solarFlares(final LocalDate from, final LocalDate to) {
+        return query(FLR_PATH, from, to, new ParameterizedTypeReference<>() {
         });
     }
 

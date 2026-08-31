@@ -6,6 +6,10 @@ import com.arthur.asteroid.alerting.nasa.NasaDonkiClient;
 import com.arthur.asteroid.alerting.nasa.NasaUnavailableException;
 import com.arthur.asteroid.alerting.nasa.dto.donki.CoronalMassEjection;
 import com.arthur.asteroid.alerting.nasa.dto.donki.DonkiInstrument;
+import com.arthur.asteroid.alerting.nasa.dto.donki.GeomagneticStorm;
+import com.arthur.asteroid.alerting.nasa.dto.donki.KpIndexReading;
+import com.arthur.asteroid.alerting.nasa.dto.donki.LinkedEvent;
+import com.arthur.asteroid.alerting.nasa.dto.donki.SolarFlare;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
@@ -133,6 +137,59 @@ class DonkiControllerTest {
         mockMvc.perform(get(CME))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.title").value("Upstream unavailable"));
+    }
+
+    @Test
+    @DisplayName("serves geomagnetic storms on their own path")
+    void servesGeomagneticStorms() throws Exception {
+        given(donkiClient.geomagneticStorms(any(), any())).willReturn(List.of(
+                new GeomagneticStorm("2026-08-12T18:00:00-GST-001",
+                        OffsetDateTime.parse("2026-08-12T18:00Z"),
+                        List.of(new KpIndexReading(OffsetDateTime.parse("2026-08-13T00:00Z"), 7.33, "NOAA")),
+                        List.of(new LinkedEvent("2026-08-11T03:36:00-CME-001")),
+                        "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/GST/1/-1")));
+
+        mockMvc.perform(get("/api/v1/nasa/donki/gst"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].gstID").value("2026-08-12T18:00:00-GST-001"))
+                .andExpect(jsonPath("$[0].allKpIndex[0].kpIndex").value(7.33))
+                .andExpect(jsonPath("$[0].linkedEvents[0].activityID")
+                        .value("2026-08-11T03:36:00-CME-001"));
+
+        verify(donkiClient).geomagneticStorms(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+    }
+
+    @Test
+    @DisplayName("serves solar flares on their own path")
+    void servesSolarFlares() throws Exception {
+        given(donkiClient.solarFlares(any(), any())).willReturn(List.of(
+                new SolarFlare("2026-08-11T02:58:00-FLR-001",
+                        List.of(new DonkiInstrument("GOES-P: EXIS 1.0-8.0")),
+                        OffsetDateTime.parse("2026-08-11T02:58Z"),
+                        OffsetDateTime.parse("2026-08-11T03:14Z"),
+                        OffsetDateTime.parse("2026-08-11T03:31Z"),
+                        "M1.4", "N12E45", 14208, "", List.of(),
+                        "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/1/-1")));
+
+        mockMvc.perform(get("/api/v1/nasa/donki/flr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].flrID").value("2026-08-11T02:58:00-FLR-001"))
+                .andExpect(jsonPath("$[0].classType").value("M1.4"))
+                .andExpect(jsonPath("$[0].activeRegionNum").value(14208));
+
+        verify(donkiClient).solarFlares(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+    }
+
+    @Test
+    @DisplayName("all three DONKI paths share the same window validation")
+    void allPathsShareWindowValidation() throws Exception {
+        for (final String path : List.of("cme", "gst", "flr")) {
+            mockMvc.perform(get("/api/v1/nasa/donki/" + path)
+                            .param("from", "2025-01-01").param("to", "2026-01-01"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail")
+                            .value(org.hamcrest.Matchers.containsString("at most 90 days")));
+        }
     }
 
     private static CoronalMassEjection cme() {
