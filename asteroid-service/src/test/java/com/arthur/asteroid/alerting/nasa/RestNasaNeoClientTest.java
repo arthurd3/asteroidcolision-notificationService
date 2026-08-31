@@ -2,9 +2,8 @@ package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.config.NasaPropertiesFixture;
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.arthur.asteroid.alerting.nasa.dto.Asteroid;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,15 +15,20 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Exercises the client against a real socket. A mock RestClient could not show
- * that a 429 or a truncated body is translated instead of escaping raw.
+ * What this client adds on top of {@link NasaEndpoint}: mapping the feed's JSON onto
+ * the DTOs, and flattening its date-keyed map in date order.
+ *
+ * <p>The transport cases - error statuses, unparseable bodies, refused connections,
+ * and the API key never appearing in a message - live in {@link NasaEndpointTest},
+ * because they are identical for every NASA client and only need testing once.
  */
 class RestNasaNeoClientTest {
 
@@ -47,7 +51,7 @@ class RestNasaNeoClientTest {
         wireMock.resetAll();
         // The client no longer builds its own RestClient - NasaRestClientsConfig does,
         // with this API's timeout budget - so the test supplies the built one. The stub
-        // path is unchanged because the path moved into the client, not into the base URL.
+        // path is unchanged because the path moved into the client, not the base URL.
         final NasaProperties properties = NasaPropertiesFixture.pointingAt(wireMock.baseUrl());
         client = new RestNasaNeoClient(
                 RestClient.builder().baseUrl(wireMock.baseUrl()).build(), properties);
@@ -56,7 +60,7 @@ class RestNasaNeoClientTest {
     @Test
     @DisplayName("parses the feed and ignores fields the contract does not map")
     void parsesFeed() {
-        stub(200, """
+        stub("""
                 {
                   "links": { "next": "http://example.test/next", "self": "http://example.test/self" },
                   "element_count": 1,
@@ -83,7 +87,8 @@ class RestNasaNeoClientTest {
                 }
                 """);
 
-        final List<Asteroid> asteroids = client.findAsteroids(LocalDate.now(), LocalDate.now().plusDays(1));
+        final List<Asteroid> asteroids =
+                client.findAsteroids(LocalDate.now(), LocalDate.now().plusDays(1));
 
         assertThat(asteroids).singleElement().satisfies(asteroid -> {
             assertThat(asteroid.name()).isEqualTo("433 Eros");
@@ -94,55 +99,49 @@ class RestNasaNeoClientTest {
     }
 
     @Test
-    @DisplayName("translates the rate-limit response instead of letting it escape raw")
-    void translatesRateLimit() {
-        stub(429, "{\"error\":{\"code\":\"OVER_RATE_LIMIT\"}}");
+    @DisplayName("sends the scan window and the API key as query parameters")
+    void sendsWindowAndKey() {
+        stub("{\"element_count\": 0, \"near_earth_objects\": {}}");
 
-        assertThatThrownBy(() -> client.findAsteroids(LocalDate.now(), LocalDate.now()))
-                .isInstanceOf(NasaUnavailableException.class)
-                .hasMessageContaining("429");
+        client.findAsteroids(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 8));
+
+        wireMock.verify(getRequestedFor(urlPathEqualTo(RestNasaNeoClient.FEED_PATH))
+                .withQueryParam("start_date", equalTo("2026-03-01"))
+                .withQueryParam("end_date", equalTo("2026-03-08"))
+                .withQueryParam("api_key", equalTo(NasaPropertiesFixture.API_KEY)));
     }
 
     @Test
-    @DisplayName("translates a server error")
-    void translatesServerError() {
-        stub(500, "boom");
+    @DisplayName("flattens the date-keyed map in date order, not JSON order")
+    void flattensInDateOrder() {
+        // deliberately listed newest-first, which is what the feed sometimes does
+        stub("""
+                {
+                  "element_count": 2,
+                  "near_earth_objects": {
+                    "2026-03-06": [ { "id": "2", "name": "Later", "is_potentially_hazardous_asteroid": false } ],
+                    "2026-03-04": [ { "id": "1", "name": "Sooner", "is_potentially_hazardous_asteroid": false } ]
+                  }
+                }
+                """);
 
-        assertThatThrownBy(() -> client.findAsteroids(LocalDate.now(), LocalDate.now()))
-                .isInstanceOf(NasaUnavailableException.class);
-    }
-
-    @Test
-    @DisplayName("translates an unparseable body")
-    void translatesMalformedBody() {
-        stub(200, "{ this is not json");
-
-        assertThatThrownBy(() -> client.findAsteroids(LocalDate.now(), LocalDate.now()))
-                .isInstanceOf(NasaUnavailableException.class);
+        assertThat(client.findAsteroids(LocalDate.now(), LocalDate.now().plusDays(3)))
+                .extracting(Asteroid::name)
+                .containsExactly("Sooner", "Later");
     }
 
     @Test
     @DisplayName("handles a feed response with no objects at all")
     void handlesEmptyFeed() {
-        stub(200, "{\"element_count\": 0, \"near_earth_objects\": {}}");
+        stub("{\"element_count\": 0, \"near_earth_objects\": {}}");
 
         assertThat(client.findAsteroids(LocalDate.now(), LocalDate.now())).isEmpty();
     }
 
-    @Test
-    @DisplayName("never puts the API key in the exception message")
-    void doesNotLeakApiKeyOnFailure() {
-        stub(403, "forbidden");
-
-        assertThatThrownBy(() -> client.findAsteroids(LocalDate.now(), LocalDate.now()))
-                .isInstanceOf(NasaUnavailableException.class)
-                .hasMessageNotContaining("test-key");
-    }
-
-    private static void stub(int status, String body) {
-        wireMock.stubFor(get(urlPathEqualTo("/neo/rest/v1/feed"))
+    private static void stub(final String body) {
+        wireMock.stubFor(get(urlPathEqualTo(RestNasaNeoClient.FEED_PATH))
                 .willReturn(aResponse()
-                        .withStatus(status)
+                        .withStatus(200)
                         .withHeader("Content-Type", "application/json")
                         .withBody(body)));
     }
