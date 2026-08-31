@@ -72,6 +72,15 @@ spring:
   thymeleaf:
     cache: true
 
+  mvc:
+    problemdetails:
+      # RFC 9457 for framework-raised failures too - an unparseable path variable,
+      # a param that will not convert - and not only for the exceptions
+      # ApiExceptionHandler names by hand. Defaults to false. web-ui decodes
+      # application/problem+json from both backends the same way, so a bare HTML
+      # error page from here would be the one case it could not explain.
+      enabled: true
+
 server:
   port: 8081
 
