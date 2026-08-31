@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: asteroid-service
+
+  # Applies to the auto-configured RestClient.Builder. Without these the NASA
+  # call has no timeout at all and a hung endpoint pins the request thread.
+  http:
+    client:
+      connect-timeout: 3s
+      read-timeout: 10s
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all
+      retries: 10
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 120000
+        linger.ms: 20
+        spring.json.add.type.headers: true
+        # The alias, not the class name, travels in the __TypeId__ header. That is
+        # what lets either service move its packages without stranding messages
+        # already sitting in the topic.
+        spring.json.type.mapping: >-
+          asteroid-collision.v1:com.arthur.asteroid.contracts.v1.AsteroidCollisionEvent
+
+server:
+  port: 8080
+
+asteroid:
+  nasa:
+    base-url: https://api.nasa.gov/neo/rest/v1/feed
+    # DEMO_KEY works out of the box but is capped at 30 requests/hour.
+    # Get your own at https://api.nasa.gov and export NASA_API_KEY.
+    api-key: ${NASA_API_KEY:DEMO_KEY}
+    lookahead-days: 7
+  alerting:
+    topic: asteroid-alert
+    partitions: 3
+    replication-factor: 1
+
+resilience4j:
+  retry:
+    instances:
+      nasaNeoFeed:
+        max-attempts: 3
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - com.arthur.asteroid.alerting.nasa.NasaUnavailableException
+  circuitbreaker:
+    instances:
+      nasaNeoFeed:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - com.arthur.asteroid.alerting.nasa.NasaUnavailableException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    com.arthur.asteroid: INFO
