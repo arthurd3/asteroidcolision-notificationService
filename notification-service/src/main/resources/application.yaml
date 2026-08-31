@@ -1,0 +1,98 @@
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:asteroidalerting}
+    # no default: the app should refuse to start rather than silently try root/123456
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000
+
+  jpa:
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks the mapping matches it.
+      # This was ddl-auto=update, which is unreviewable and cannot roll back.
+      ddl-auto: validate
+    # MySQL8Dialect was removed in Hibernate 7 and the dialect is auto-detected
+    # from JDBC metadata anyway, so it is not set here.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      # process everything published while this service was down, rather than
+      # Kafka's default of skipping to the newest offset
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # wraps the JSON deserializer so a malformed payload becomes a handled
+      # failure instead of a message the container retries forever
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        # mirrors the producer's alias, so neither side is coupled to the other's
+        # package names
+        spring.json.type.mapping: >-
+          asteroid-collision.v1:com.arthur.asteroid.contracts.v1.AsteroidCollisionEvent
+        spring.json.trusted.packages: com.arthur.asteroid.contracts.v1
+        spring.json.value.default.type: com.arthur.asteroid.contracts.v1.AsteroidCollisionEvent
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+
+  mail:
+    host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  thymeleaf:
+    cache: true
+
+server:
+  port: 8081
+
+notification:
+  topic: asteroid-alert
+  from-address: ${MAIL_FROM:alerts@asteroid.local}
+  batch-size: 50
+  max-attempts: 3
+  # was a bare 100000 literal on the @Scheduled annotation
+  dispatch-interval: PT30S
+  dispatch-initial-delay: PT10S
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.arthur.asteroid: INFO

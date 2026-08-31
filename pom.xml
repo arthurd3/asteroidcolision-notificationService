@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.arthur.asteroid</groupId>
+  <artifactId>asteroid-platform</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>asteroid-platform</name>
+  <description>Asteroid collision alerting - event-driven monorepo</description>
+
+  <modules>
+    <module>contracts</module>
+    <module>asteroid-service</module>
+    <module>notification-service</module>
+  </modules>
+
+  <properties>
+    <!-- spring-boot-starter-parent defaults java.version to 17 and drives
+         maven.compiler.release from it. -->
+    <java.version>21</java.version>
+    <!-- Not managed by the Spring Boot BOM. -->
+    <resilience4j.version>2.4.0</resilience4j.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.arthur.asteroid</groupId>
+        <artifactId>contracts</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-bom</artifactId>
+        <version>${resilience4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- resilience4j-bom 2.4.0 lists resilience4j-spring-boot3 but NOT the Boot 4
+           starter, so importing the BOM does not manage it. Pin it here until a
+           release fixes the BOM: https://github.com/resilience4j/resilience4j/issues/2427 -->
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-spring-boot4</artifactId>
+        <version>${resilience4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <plugins>
+      <!-- spring-boot-starter-parent only *manages* failsafe, it does not activate
+           it. Without this declaration every *IT class is silently skipped and the
+           build still reports success, which is worse than having no ITs at all. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <parameters>true</parameters>
+            <!-- Declaring annotationProcessorPaths makes javac ignore the compile
+                 classpath for processor discovery. Both processors must be listed
+                 here, or spring-configuration-metadata.json silently stops being
+                 generated. Versions come from the Boot BOM. -->
+            <annotationProcessorPaths>
+              <path>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+              </path>
+              <path>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-configuration-processor</artifactId>
+              </path>
+            </annotationProcessorPaths>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

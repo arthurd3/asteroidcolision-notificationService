@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="'Asteroid alert: ' + ${notification.asteroidName}">Asteroid alert</title>
+</head>
+<body style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:#1a1a1a;">
+
+<p th:text="'Hi ' + ${recipientName} + ','">Hi there,</p>
+
+<p>
+    NASA has flagged
+    <strong th:text="${notification.asteroidName}">asteroid</strong>
+    as a potentially hazardous object on a close approach.
+</p>
+
+<table cellpadding="6" cellspacing="0"
+       style="border-collapse:collapse; border:1px solid #ddd; margin:16px 0;">
+    <tr style="background:#f5f5f5;">
+        <td><strong>Close approach date</strong></td>
+        <td th:text="${notification.closeApproachDate}">--</td>
+    </tr>
+    <tr>
+        <td><strong>Miss distance</strong></td>
+        <td th:text="${#numbers.formatDecimal(notification.missDistanceKilometers, 0, 'COMMA', 0, 'POINT')} + ' km'">--</td>
+    </tr>
+    <tr style="background:#f5f5f5;">
+        <td><strong>Estimated diameter</strong></td>
+        <td th:text="${#numbers.formatDecimal(notification.estimatedDiameterAvgMeters, 0, 'COMMA', 1, 'POINT')} + ' m (average)'">--</td>
+    </tr>
+</table>
+
+<p style="color:#666; font-size:12px;">
+    Sent by asteroid-alerting. Reference
+    <span th:text="${notification.eventId}">--</span>.
+</p>
+
+</body>
+</html>
