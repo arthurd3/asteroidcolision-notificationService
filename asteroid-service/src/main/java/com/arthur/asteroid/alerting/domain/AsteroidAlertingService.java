@@ -39,7 +39,7 @@ public class AsteroidAlertingService {
     /** Scans the default window: today through {@code lookaheadDays} ahead. */
     public AlertSummary alert() {
         final LocalDate today = LocalDate.now(clock);
-        return alert(today, today.plusDays(nasaProperties.lookaheadDays()));
+        return alert(today, today.plusDays(nasaProperties.neo().lookaheadDays()));
     }
 
     public AlertSummary alert(final LocalDate from, final LocalDate to) {

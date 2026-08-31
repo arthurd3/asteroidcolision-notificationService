@@ -1,6 +1,7 @@
 package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
+import com.arthur.asteroid.alerting.config.NasaPropertiesFixture;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.arthur.asteroid.alerting.nasa.dto.Asteroid;
@@ -44,9 +45,12 @@ class RestNasaNeoClientTest {
     @BeforeEach
     void setUp() {
         wireMock.resetAll();
-        final NasaProperties properties =
-                new NasaProperties(wireMock.baseUrl() + "/neo/rest/v1/feed", "test-key", 7);
-        client = new RestNasaNeoClient(RestClient.builder(), properties);
+        // The client no longer builds its own RestClient - NasaRestClientsConfig does,
+        // with this API's timeout budget - so the test supplies the built one. The stub
+        // path is unchanged because the path moved into the client, not into the base URL.
+        final NasaProperties properties = NasaPropertiesFixture.pointingAt(wireMock.baseUrl());
+        client = new RestNasaNeoClient(
+                RestClient.builder().baseUrl(wireMock.baseUrl()).build(), properties);
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.arthur.asteroid.alerting.domain;
 
-import com.arthur.asteroid.alerting.config.NasaProperties;
+import com.arthur.asteroid.alerting.config.NasaPropertiesFixture;
 import com.arthur.asteroid.alerting.messaging.AsteroidEventPublisher;
 import com.arthur.asteroid.alerting.nasa.NasaNeoClient;
 import com.arthur.asteroid.alerting.nasa.dto.Asteroid;
@@ -38,7 +38,7 @@ class AsteroidAlertingServiceTest {
         publisher = new RecordingPublisher();
         final NasaNeoClient client = (from, to) -> feed;
         service = new AsteroidAlertingService(
-                client, publisher, new NasaProperties("http://nasa.test", "key", 7), FIXED);
+                client, publisher, NasaPropertiesFixture.pointingAt("http://nasa.test"), FIXED);
     }
 
     @Test

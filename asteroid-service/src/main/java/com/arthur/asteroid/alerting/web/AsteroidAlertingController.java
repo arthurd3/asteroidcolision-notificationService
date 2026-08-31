@@ -62,6 +62,6 @@ public class AsteroidAlertingController {
 
     /** Exposed so the handler can report the configured default in error detail. */
     int defaultLookaheadDays() {
-        return nasaProperties.lookaheadDays();
+        return nasaProperties.neo().lookaheadDays();
     }
 }
