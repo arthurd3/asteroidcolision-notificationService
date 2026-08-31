@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 /** Full-disc photographs of Earth from the DSCOVR spacecraft. */
@@ -42,9 +43,20 @@ public class EpicController {
         return "epic";
     }
 
+    /**
+     * Available dates, newest first.
+     *
+     * <p>NASA returns them oldest-first, and there are over three thousand. The page
+     * shows the most recent frames by default, so an unsorted list put 2015 at the top
+     * of the picker while 2026 imagery was on screen - the dropdown did not even
+     * contain the date being displayed. Reversing here rather than in the JSP keeps
+     * the ordering decision in Java, where it can be tested.
+     */
     private List<LocalDate> availableDatesOrEmpty() {
         try {
-            return asteroidService.epicAvailableDates();
+            return asteroidService.epicAvailableDates().stream()
+                    .sorted(Comparator.reverseOrder())
+                    .toList();
         } catch (BackendUnavailableException ex) {
             log.warn("EPIC date index unavailable: {}", ex.getMessage());
             return List.of();
