@@ -1,8 +1,9 @@
 package com.arthur.asteroid.alerting.nasa;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
-import com.arthur.asteroid.alerting.nasa.dto.Asteroid;
-import com.arthur.asteroid.alerting.nasa.dto.NasaNeoResponse;
+import com.arthur.asteroid.alerting.nasa.dto.neo.Asteroid;
+import com.arthur.asteroid.alerting.nasa.dto.neo.NasaNeoResponse;
+import com.arthur.asteroid.alerting.nasa.dto.neo.NeoBrowsePage;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,8 @@ public class RestNasaNeoClient implements NasaNeoClient {
     static final String RESILIENCE_NAME = "nasaNeo";
 
     static final String FEED_PATH = "/neo/rest/v1/feed";
+    static final String BROWSE_PATH = "/neo/rest/v1/neo/browse";
+    static final String LOOKUP_PATH = "/neo/rest/v1/neo/";
 
     private final NasaEndpoint endpoint;
 
@@ -75,5 +78,33 @@ public class RestNasaNeoClient implements NasaNeoClient {
         log.info("NASA NEO feed returned {} objects across {} day(s)",
                 asteroids.size(), response.nearEarthObjects().size());
         return asteroids;
+    }
+
+    @Override
+    @Retry(name = RESILIENCE_NAME)
+    @CircuitBreaker(name = RESILIENCE_NAME)
+    public Asteroid lookup(final String neoReferenceId) {
+        log.debug("Looking up NEO {}", neoReferenceId);
+
+        // Concatenated into the request path, so the caller must have validated it.
+        // NeoCatalogController constrains the id to digits in the mapping itself.
+        return endpoint.get(LOOKUP_PATH + neoReferenceId,
+                builder -> builder,
+                new ParameterizedTypeReference<>() {
+                });
+    }
+
+    @Override
+    @Retry(name = RESILIENCE_NAME)
+    @CircuitBreaker(name = RESILIENCE_NAME)
+    public NeoBrowsePage browse(final int page, final int size) {
+        log.debug("Browsing NEO catalogue page {} (size {})", page, size);
+
+        return endpoint.get(BROWSE_PATH,
+                builder -> builder
+                        .queryParam("page", page)
+                        .queryParam("size", size),
+                new ParameterizedTypeReference<>() {
+                });
     }
 }

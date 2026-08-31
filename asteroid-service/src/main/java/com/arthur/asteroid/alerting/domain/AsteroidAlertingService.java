@@ -3,7 +3,7 @@ package com.arthur.asteroid.alerting.domain;
 import com.arthur.asteroid.alerting.config.NasaProperties;
 import com.arthur.asteroid.alerting.messaging.AsteroidEventPublisher;
 import com.arthur.asteroid.alerting.nasa.NasaNeoClient;
-import com.arthur.asteroid.alerting.nasa.dto.Asteroid;
+import com.arthur.asteroid.alerting.nasa.dto.neo.Asteroid;
 import com.arthur.asteroid.contracts.v1.AsteroidCollisionEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
