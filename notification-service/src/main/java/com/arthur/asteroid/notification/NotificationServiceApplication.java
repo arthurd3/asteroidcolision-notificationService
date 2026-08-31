@@ -1,15 +1,16 @@
-package com.arthur.notificationservice;
+package com.arthur.asteroid.notification;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 @EnableScheduling
-public class NotificationserviceApplication {
+public class NotificationServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(NotificationserviceApplication.class, args);
+        SpringApplication.run(NotificationServiceApplication.class, args);
     }
-
 }
