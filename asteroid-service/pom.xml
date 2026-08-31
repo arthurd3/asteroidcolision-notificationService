@@ -108,11 +108,14 @@
       <artifactId>testcontainers-kafka</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- real socket-level stubbing for timeout / 429 / circuit-breaker tests,
-         which MockRestServiceServer cannot express. Not BOM-managed. -->
+    <!-- Real socket-level stubbing for 429 / malformed-body / timeout cases, which
+         MockRestServiceServer cannot express. Not BOM-managed.
+         The "standalone" (shaded) jar on purpose: plain org.wiremock:wiremock needs
+         Jetty 11, while Boot 4 manages Jetty 12, and the mismatch fails at startup
+         with "Jetty 11 is not present". The shaded jar carries its own server. -->
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-standalone</artifactId>
       <version>3.13.2</version>
       <scope>test</scope>
     </dependency>

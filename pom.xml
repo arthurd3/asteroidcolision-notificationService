@@ -58,6 +58,24 @@
   </dependencyManagement>
 
   <build>
+    <plugins>
+      <!-- spring-boot-starter-parent only *manages* failsafe, it does not activate
+           it. Without this declaration every *IT class is silently skipped and the
+           build still reports success, which is worse than having no ITs at all. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
     <pluginManagement>
       <plugins>
         <plugin>
