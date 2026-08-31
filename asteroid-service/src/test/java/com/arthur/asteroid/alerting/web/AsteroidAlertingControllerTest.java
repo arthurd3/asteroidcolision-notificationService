@@ -1,6 +1,7 @@
 package com.arthur.asteroid.alerting.web;
 
 import com.arthur.asteroid.alerting.config.NasaProperties;
+import com.arthur.asteroid.alerting.config.NasaPropertiesFixture;
 import com.arthur.asteroid.alerting.domain.AlertSummary;
 import com.arthur.asteroid.alerting.domain.AsteroidAlertingService;
 import com.arthur.asteroid.alerting.nasa.NasaUnavailableException;
@@ -39,7 +40,7 @@ class AsteroidAlertingControllerTest {
     static class Props {
         @Bean
         NasaProperties nasaProperties() {
-            return new NasaProperties("http://nasa.test", "key", 7);
+            return NasaPropertiesFixture.pointingAt("http://nasa.test");
         }
     }
 

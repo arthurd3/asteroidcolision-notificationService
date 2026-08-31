@@ -1,0 +1,16 @@
+<%-- Shared page close. Pairs with head.jspf. --%>
+</main>
+<footer class="footer">
+    <div class="wrap">
+        <p>
+            Data from <a href="https://api.nasa.gov" rel="noreferrer noopener">NASA Open APIs</a>.
+            This page is served by <code>web-ui</code> on port 8082, which reads
+            <code>asteroid-service</code> (8080) and <code>notification-service</code> (8081).
+        </p>
+        <p class="footer__muted">
+            A teaching project: Java 21 &middot; Spring Boot 4.1 &middot; Kafka &middot; MySQL &middot; JSP
+        </p>
+    </div>
+</footer>
+</body>
+</html>

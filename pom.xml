@@ -22,6 +22,7 @@
     <module>contracts</module>
     <module>asteroid-service</module>
     <module>notification-service</module>
+    <module>web-ui</module>
   </modules>
 
   <properties>

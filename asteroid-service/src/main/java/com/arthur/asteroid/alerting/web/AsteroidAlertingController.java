@@ -16,9 +16,6 @@ import java.time.LocalDate;
 @RequestMapping("/api/v1/asteroid-alerting")
 public class AsteroidAlertingController {
 
-    /** The feed rejects windows longer than this. */
-    private static final int MAX_WINDOW_DAYS = 7;
-
     private final AsteroidAlertingService alertingService;
     private final NasaProperties nasaProperties;
 
@@ -44,24 +41,16 @@ public class AsteroidAlertingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
-        if (from == null && to == null) {
+        if (ScanWindow.isAbsent(from, to)) {
             return ResponseEntity.ok(alertingService.alert());
         }
-        if (from == null || to == null) {
-            throw new InvalidScanWindowException("'from' and 'to' must be supplied together");
-        }
-        if (to.isBefore(from)) {
-            throw new InvalidScanWindowException("'to' must not be before 'from'");
-        }
-        if (from.plusDays(MAX_WINDOW_DAYS).isBefore(to)) {
-            throw new InvalidScanWindowException(
-                    "the NASA feed accepts a window of at most " + MAX_WINDOW_DAYS + " days");
-        }
+        // the same rules NeoCatalogController#feed applies, defined once
+        ScanWindow.validate(from, to, ScanWindow.MAX_FEED_DAYS);
         return ResponseEntity.ok(alertingService.alert(from, to));
     }
 
     /** Exposed so the handler can report the configured default in error detail. */
     int defaultLookaheadDays() {
-        return nasaProperties.lookaheadDays();
+        return nasaProperties.neo().lookaheadDays();
     }
 }

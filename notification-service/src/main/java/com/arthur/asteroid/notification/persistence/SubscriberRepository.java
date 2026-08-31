@@ -7,4 +7,6 @@ import java.util.List;
 public interface SubscriberRepository extends JpaRepository<Subscriber, Long> {
 
     List<Subscriber> findAllByNotificationEnabledTrue();
+
+    long countByNotificationEnabledTrue();
 }

@@ -1,13 +1,11 @@
 package com.arthur.asteroid.alerting.domain;
 
-import com.arthur.asteroid.alerting.config.NasaProperties;
+import com.arthur.asteroid.alerting.config.NasaPropertiesFixture;
 import com.arthur.asteroid.alerting.messaging.AsteroidEventPublisher;
 import com.arthur.asteroid.alerting.nasa.NasaNeoClient;
-import com.arthur.asteroid.alerting.nasa.dto.Asteroid;
-import com.arthur.asteroid.alerting.nasa.dto.CloseApproachData;
-import com.arthur.asteroid.alerting.nasa.dto.DiameterRange;
-import com.arthur.asteroid.alerting.nasa.dto.EstimatedDiameter;
-import com.arthur.asteroid.alerting.nasa.dto.MissDistance;
+import com.arthur.asteroid.alerting.nasa.dto.neo.Asteroid;
+import com.arthur.asteroid.alerting.nasa.dto.neo.NeoBrowsePage;
+import com.arthur.asteroid.alerting.nasa.dto.neo.NeoFixtures;
 import com.arthur.asteroid.contracts.v1.AsteroidCollisionEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,9 +34,9 @@ class AsteroidAlertingServiceTest {
     void setUp() {
         feed = new ArrayList<>();
         publisher = new RecordingPublisher();
-        final NasaNeoClient client = (from, to) -> feed;
+        final NasaNeoClient client = new FeedOnlyClient();
         service = new AsteroidAlertingService(
-                client, publisher, new NasaProperties("http://nasa.test", "key", 7), FIXED);
+                client, publisher, NasaPropertiesFixture.pointingAt("http://nasa.test"), FIXED);
     }
 
     @Test
@@ -60,7 +58,7 @@ class AsteroidAlertingServiceTest {
     @Test
     @DisplayName("skips an asteroid with no approach data instead of failing the whole scan")
     void skipsAsteroidWithoutApproachData() {
-        feed.add(new Asteroid("1", "No Approach Data", diameter(), true, List.of()));
+        feed.add(NeoFixtures.asteroid("1", "No Approach Data", true, List.of()));
         feed.add(asteroid("2", "Usable", true));
 
         final AlertSummary summary = service.alert();
@@ -75,7 +73,7 @@ class AsteroidAlertingServiceTest {
     @Test
     @DisplayName("survives a null close_approach_data array")
     void survivesNullApproachData() {
-        feed.add(new Asteroid("1", "Null Approach", diameter(), true, null));
+        feed.add(NeoFixtures.asteroid("1", "Null Approach", true, null));
 
         assertThat(service.alert().published()).isZero();
     }
@@ -121,13 +119,31 @@ class AsteroidAlertingServiceTest {
     }
 
     private static Asteroid asteroid(String id, String name, boolean hazardous) {
-        return new Asteroid(id, name, diameter(), hazardous,
-                List.of(new CloseApproachData(
-                        LocalDate.of(2026, 3, 4), new MissDistance("54321.5"))));
+        return NeoFixtures.asteroid(id, name, hazardous);
     }
 
-    private static EstimatedDiameter diameter() {
-        return new EstimatedDiameter(new DiameterRange(100, 300));
+    /**
+     * NasaNeoClient gained lookup and browse, so it is no longer a functional
+     * interface and the one-line lambda that used to stand in for it no longer
+     * compiles. Only the feed drives this service; the other two are not reachable
+     * from here, so they say so rather than returning a misleading empty result.
+     */
+    private final class FeedOnlyClient implements NasaNeoClient {
+
+        @Override
+        public List<Asteroid> findAsteroids(LocalDate from, LocalDate to) {
+            return feed;
+        }
+
+        @Override
+        public Asteroid lookup(String neoReferenceId) {
+            throw new UnsupportedOperationException("alerting never looks an object up");
+        }
+
+        @Override
+        public NeoBrowsePage browse(int page, int size) {
+            throw new UnsupportedOperationException("alerting never browses the catalogue");
+        }
     }
 
     /** Captures what was published without needing a broker or a mocking framework. */

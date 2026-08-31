@@ -5,6 +5,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.boot.kafka.autoconfigure.KafkaConnectionDetails;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,13 +36,28 @@ import java.util.Map;
  * never committed, and the container re-reads the same poison message forever —
  * exactly the failure the dead-letter topic exists to prevent.
  * {@link DelegatingByTypeSerializer} picks the serializer per payload type.
+ *
+ * <p>The bootstrap servers come from {@link KafkaConnectionDetails}, not from
+ * {@code KafkaProperties} alone. Boot's own Kafka auto-configuration calls
+ * {@code buildProducerProperties()} and then applies the connection details on top,
+ * because a connection can be supplied by something other than the yaml - a
+ * Testcontainers {@code @ServiceConnection}, Docker Compose support, or a cloud
+ * binding. Building a factory from the properties alone silently keeps whatever
+ * {@code spring.kafka.bootstrap-servers} says, so in any of those environments this
+ * producer points at a broker that is not the one everything else is using, and the
+ * only symptom is "Topic asteroid-alert.DLT not present in metadata after 60000 ms"
+ * while the consumer is demonstrably connected.
  */
 @Configuration(proxyBeanMethods = false)
 public class DeadLetterProducerConfig {
 
     @Bean
-    ProducerFactory<Object, Object> deadLetterProducerFactory(KafkaProperties kafkaProperties) {
+    ProducerFactory<Object, Object> deadLetterProducerFactory(KafkaProperties kafkaProperties,
+                                                             KafkaConnectionDetails connectionDetails) {
         final Map<String, Object> config = new LinkedHashMap<>(kafkaProperties.buildProducerProperties());
+        // the step Boot's own auto-configuration takes and this bean used to miss
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                connectionDetails.getProducer().getBootstrapServers());
         config.put(ProducerConfig.ACKS_CONFIG, "all");
         config.remove(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG);
         config.remove(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG);

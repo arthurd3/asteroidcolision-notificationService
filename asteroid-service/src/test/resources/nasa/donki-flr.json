@@ -1,0 +1,84 @@
+[
+  {
+    "flrID": "2026-06-03T11:19:00-FLR-001",
+    "catalog": "M2M_CATALOG",
+    "instruments": [
+      {
+        "displayName": "GOES-S: EXIS 1.0-8.0"
+      }
+    ],
+    "beginTime": "2026-06-03T11:19Z",
+    "peakTime": "2026-06-03T11:28Z",
+    "endTime": "2026-06-03T11:35Z",
+    "classType": "X1.0",
+    "sourceLocation": "N14W16",
+    "activeRegionNum": 14455,
+    "note": "",
+    "submissionTime": "2026-06-03T11:48Z",
+    "versionId": 2,
+    "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/46593/-1",
+    "linkedEvents": [
+      {
+        "activityID": "2026-06-03T11:48:00-CME-001"
+      }
+    ],
+    "sentNotifications": [
+      {
+        "messageID": "20260603-AL-007",
+        "messageIssueTime": "2026-06-03T11:29Z",
+        "messageURL": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/Alert/46594/1"
+      },
+      {
+        "messageID": "20260603-AL-008",
+        "messageIssueTime": "2026-06-03T11:49Z",
+        "messageURL": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/Alert/46595/1"
+      }
+    ]
+  },
+  {
+    "flrID": "2026-05-04T01:13:00-FLR-001",
+    "catalog": "M2M_CATALOG",
+    "instruments": [
+      {
+        "displayName": "GOES-P: EXIS 1.0-8.0"
+      }
+    ],
+    "beginTime": "2026-05-04T01:13Z",
+    "peakTime": "2026-05-04T01:33Z",
+    "endTime": "2026-05-04T01:44Z",
+    "classType": "M1.8",
+    "sourceLocation": "N17W80",
+    "activeRegionNum": 14424,
+    "note": "",
+    "submissionTime": "2026-05-04T01:50Z",
+    "versionId": 1,
+    "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/45975/-1",
+    "linkedEvents": null,
+    "sentNotifications": null
+  },
+  {
+    "flrID": "2026-05-13T19:35:00-FLR-001",
+    "catalog": "M2M_CATALOG",
+    "instruments": [
+      {
+        "displayName": "GOES-P: EXIS 1.0-8.0"
+      }
+    ],
+    "beginTime": "2026-05-13T19:35Z",
+    "peakTime": "2026-05-13T19:48Z",
+    "endTime": "2026-05-13T19:59Z",
+    "classType": "C1.4",
+    "sourceLocation": "N18W90",
+    "activeRegionNum": 14432,
+    "note": "Flare may be located slightly beyond the west limb, W90-W95.",
+    "submissionTime": "2026-05-14T13:59Z",
+    "versionId": 1,
+    "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/46144/-1",
+    "linkedEvents": [
+      {
+        "activityID": "2026-05-13T22:24:00-CME-001"
+      }
+    ],
+    "sentNotifications": null
+  }
+]

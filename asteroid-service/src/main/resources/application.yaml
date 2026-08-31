@@ -2,12 +2,23 @@ spring:
   application:
     name: asteroid-service
 
-  # Applies to the auto-configured RestClient.Builder. Without these the NASA
-  # call has no timeout at all and a hung endpoint pins the request thread.
+  # Plural. spring.http.client.* was deprecated in Boot 4.0.0 in favour of
+  # spring.http.clients.*; the singular keys still bind, but the metadata marks
+  # them deprecated and spring-boot-properties-migrator complains at startup.
+  #
+  # These are the DEFAULTS. Each NASA client overrides them per API in
+  # NasaRestClientsConfig, because DONKI needs two minutes and the feed does not.
   http:
-    client:
+    clients:
       connect-timeout: 3s
       read-timeout: 10s
+
+  mvc:
+    problemdetails:
+      # RFC 9457 for framework-raised failures too - an unreadable body, a param
+      # that will not convert - and not only for the exceptions ApiExceptionHandler
+      # names by hand. Defaults to false.
+      enabled: true
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -33,29 +44,72 @@ server:
 
 asteroid:
   nasa:
-    base-url: https://api.nasa.gov/neo/rest/v1/feed
-    # DEMO_KEY works out of the box but is capped at 30 requests/hour.
-    # Get your own at https://api.nasa.gov and export NASA_API_KEY.
+    # The API ROOT, not an endpoint. Each client owns its own path below this:
+    # /neo/rest/v1/feed, /planetary/apod, /DONKI/CME, /EPIC/api/natural.
+    base-url: https://api.nasa.gov
+    # DEMO_KEY works out of the box but is capped at 30 requests/hour across EVERY
+    # api.nasa.gov endpoint, not per endpoint. One page of the front end can spend
+    # four of them. Get your own at https://api.nasa.gov and export NASA_API_KEY.
     api-key: ${NASA_API_KEY:DEMO_KEY}
-    lookahead-days: 7
+    neo:
+      lookahead-days: 7
+      browse-page-size: 20
+      timeouts: { connect: 3s, read: 10s }
+    apod:
+      timeouts: { connect: 3s, read: 10s }
+    donki:
+      default-window-days: 30
+      max-window-days: 90
+      # Measured, not guessed: a single CME query over 30 days times out at 30s and
+      # needs roughly a 90s budget. This is the entire reason per-API timeouts exist.
+      timeouts: { connect: 3s, read: 120s }
+    epic:
+      # archive PNGs are a couple of megabytes, so the read budget is generous
+      timeouts: { connect: 3s, read: 30s }
+      image-cache-ttl: 7d
+    cache:
+      # Short on purpose. Long enough that clicking around the front end costs one
+      # upstream call per resource rather than one per click, short enough that
+      # nobody has to reason about staleness. NASA's data changes over days.
+      ttl: 10m
+      maximum-size: 200
+      # archive frames never change once published
+      image-ttl: 24h
+      # each entry is roughly 2 MB, so this bound is about heap, not hit rate
+      image-maximum-size: 40
   alerting:
     topic: asteroid-alert
     partitions: 3
     replication-factor: 1
 
 resilience4j:
+  # "default" is special-cased by resilience4j: an instance that names no base-config
+  # inherits it. Declaring it once replaces four near-identical blocks, and means a
+  # change to the retry policy cannot be applied to three APIs and forgotten on the
+  # fourth.
   retry:
-    instances:
-      nasaNeoFeed:
+    configs:
+      default:
         max-attempts: 3
         wait-duration: 1s
         enable-exponential-backoff: true
         exponential-backoff-multiplier: 2
+        # Referenced by fully-qualified class name, so moving or renaming this class
+        # silently disables retry with no startup error. NasaResilienceConfigTest
+        # turns that into a failing build. It is also why there is one exception type
+        # for all four APIs rather than one per API.
         retry-exceptions:
           - com.arthur.asteroid.alerting.nasa.NasaUnavailableException
-  circuitbreaker:
     instances:
-      nasaNeoFeed:
+      nasaNeo: { base-config: default }
+      nasaApod: { base-config: default }
+      # a 90-second call retried three times is a four-and-a-half-minute request,
+      # which no caller is waiting for. One retry is the whole budget.
+      nasaDonki: { base-config: default, max-attempts: 2 }
+      nasaEpic: { base-config: default }
+  circuitbreaker:
+    configs:
+      default:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
         minimum-number-of-calls: 5
@@ -66,6 +120,20 @@ resilience4j:
         register-health-indicator: true
         record-exceptions:
           - com.arthur.asteroid.alerting.nasa.NasaUnavailableException
+    instances:
+      nasaNeo: { base-config: default }
+      nasaApod: { base-config: default }
+      nasaDonki: { base-config: default }
+      nasaEpic: { base-config: default }
+  bulkhead:
+    instances:
+      # DONKI holds a Tomcat worker for up to two minutes. Without a bound, five
+      # impatient page refreshes hold five threads for ten thread-minutes and the
+      # rest of the service starves. max-wait-duration 0 means the sixth caller is
+      # rejected immediately rather than queueing behind them.
+      nasaDonki:
+        max-concurrent-calls: 2
+        max-wait-duration: 0
 
 management:
   endpoints:
@@ -78,6 +146,12 @@ management:
   health:
     circuitbreakers:
       enabled: true
+  # Caffeine's recordStats() feeds cache.gets / cache.puts / cache.evictions on
+  # /actuator/prometheus, so "is the cache doing anything" is a question with an
+  # answer rather than a guess.
+  metrics:
+    enable:
+      cache: true
 
 logging:
   level:

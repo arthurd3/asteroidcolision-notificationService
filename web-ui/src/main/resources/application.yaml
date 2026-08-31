@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: web-ui
+
+  mvc:
+    view:
+      # WebMvcAutoConfiguration creates an InternalResourceViewResolver as soon as one
+      # of these is set. A controller returning "apod" then forwards to
+      # /WEB-INF/jsp/apod.jsp. Under WEB-INF on purpose: a servlet container will not
+      # serve anything from there directly, so nobody can request a .jsp and bypass
+      # the controller that was supposed to populate its model.
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+
+  http:
+    clients:
+      # defaults only; BackendRestClientsConfig narrows them per backend
+      connect-timeout: 3s
+      read-timeout: 10s
+
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 1h
+    error:
+      whitelabel:
+        # spring.web.error.*, NOT server.error.* - the whole server.error family is
+        # deprecated at level "error" since Boot 4.0.0, so the old spelling binds to
+        # nothing and silently does not work.
+        #
+        # Turning the whitelabel off is what makes error.jsp reachable at all. The
+        # whitelabel page is a View BEAN named "error", and BeanNameViewResolver
+        # (order 10) outranks the InternalResourceViewResolver (LOWEST_PRECEDENCE) -
+        # so while it is enabled, returning "error" from a @ControllerAdvice resolves
+        # to the whitelabel and /WEB-INF/jsp/error.jsp is never reached, no matter
+        # what the advice does.
+        enabled: false
+
+server:
+  port: 8082
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+  # NOTE: server.servlet.register-default-servlet stays at its Boot 4 default of
+  # false, which is why src/main/resources/static holds the CSS and src/main/webapp
+  # holds only JSPs. With no DefaultServlet registered, nothing serves the document
+  # root except Jasper, so a stylesheet under webapp/ would 404 silently.
+
+webui:
+  asteroid-service:
+    base-url: ${ASTEROID_SERVICE_URL:http://localhost:8080}
+    display-name: asteroid-service (port 8080)
+    connect-timeout: 3s
+    # generous: /api/v1/nasa/donki/* is upstream-bound and DONKI can take 90 seconds,
+    # so this has to exceed asteroid-service's own 120s budget for those paths
+    read-timeout: 130s
+  notification-service:
+    base-url: ${NOTIFICATION_SERVICE_URL:http://localhost:8081}
+    display-name: notification-service (port 8081)
+    connect-timeout: 3s
+    # reads its own database; if this is slow something is wrong
+    read-timeout: 10s
+  page-size: 20
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.arthur.asteroid: INFO

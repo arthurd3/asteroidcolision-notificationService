@@ -1,0 +1,25 @@
+<%--
+  Site navigation. Included by head.jspf; not a page in its own right.
+
+  NOTE the HTML entities rather than literal characters. pageEncoding can only be
+  declared once per translation unit - it is in head.jspf - and a statically included
+  fragment does not inherit it for the purpose of reading its own bytes, so a literal
+  UTF-8 character in a .jspf is decoded with the container's default and renders as
+  mojibake. Entities are portable and need no web.xml.
+--%>
+<header class="topbar">
+    <div class="wrap topbar__inner">
+        <a class="brand" href="${pageContext.request.contextPath}/">
+            <span class="brand__mark" aria-hidden="true">&#9678;</span>
+            <span class="brand__text">Asteroid Watch</span>
+        </a>
+        <nav class="nav" aria-label="Main">
+            <a href="${pageContext.request.contextPath}/apod">Picture of the day</a>
+            <a href="${pageContext.request.contextPath}/neo">Near-Earth objects</a>
+            <a href="${pageContext.request.contextPath}/space-weather">Space weather</a>
+            <a href="${pageContext.request.contextPath}/epic">Earth imagery</a>
+            <a href="${pageContext.request.contextPath}/history">Alert history</a>
+            <a class="nav__cta" href="${pageContext.request.contextPath}/scan">Run a scan</a>
+        </nav>
+    </div>
+</header>
