@@ -1,0 +1,154 @@
+/*
+ * One hand-written stylesheet. No framework, no CDN.
+ *
+ * Two reasons beyond taste: a CDN link is a third-party request from every page and
+ * a supply-chain dependency for a project whose point is being read end to end; and
+ * this file has to be servable at all, which it only is because it lives in
+ * src/main/resources/static rather than src/main/webapp. Boot 4 defaults
+ * server.servlet.register-default-servlet to false, so no DefaultServlet is
+ * registered and nothing serves the war's document root except Jasper serving .jsp.
+ * Spring MVC's own resource handler serves classpath:/static/**, which is how this
+ * reaches /css/app.css.
+ */
+
+:root {
+    --bg: #0b0d12;
+    --surface: #141821;
+    --surface-2: #1b202b;
+    --border: #262d3b;
+    --text: #e7ebf3;
+    --text-muted: #97a1b5;
+    --accent: #6ea8fe;
+    --accent-dim: #2b4b7d;
+    --hazard: #ff6b6b;
+    --pending: #ffc766;
+    --ok: #5fd39a;
+    --radius: 10px;
+    --wrap: 72rem;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f6f8fc;
+        --surface: #ffffff;
+        --surface-2: #eef2f9;
+        --border: #d7deea;
+        --text: #161c26;
+        --text-muted: #5b6577;
+        --accent: #1d4ed8;
+        --accent-dim: #bfd3f7;
+        --hazard: #c2321f;
+        --pending: #a56b00;
+        --ok: #1a7f52;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 1.25rem; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+code { background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 4px; }
+
+/* ------------------------------------------------------------------ topbar */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+.topbar__inner { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; padding-block: 0.85rem; }
+.brand { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 650; color: var(--text); }
+.brand__mark { color: var(--accent); font-size: 1.25rem; }
+.nav { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; align-items: center; }
+.nav a { color: var(--text-muted); font-size: 0.95rem; }
+.nav a:hover { color: var(--text); }
+.nav__cta { background: var(--accent); color: var(--bg) !important; padding: 0.35rem 0.8rem; border-radius: 999px; font-weight: 600; }
+.nav__cta:hover { text-decoration: none; opacity: 0.9; }
+
+/* -------------------------------------------------------------- typography */
+.page-title { font-size: 1.9rem; line-height: 1.2; margin: 2rem 0 0.5rem; }
+.lede { color: var(--text-muted); max-width: 60ch; margin-top: 0; }
+.muted { color: var(--text-muted); font-size: 0.92rem; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 5; line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.more { display: inline-block; margin-top: 0.75rem; font-weight: 600; }
+
+/* ------------------------------------------------------------------ panels */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.35rem; margin-bottom: 1.5rem; }
+.panel__title { margin: 0 0 1rem; font-size: 1.05rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
+.panel--error { border-color: var(--hazard); }
+.card__heading { margin: 0.75rem 0 0.25rem; font-size: 1.2rem; }
+.grid-2 { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+@media (min-width: 56rem) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+.unavailable { color: var(--text-muted); background: var(--surface-2); border-left: 3px solid var(--pending); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; }
+
+/* ------------------------------------------------------------------- tiles */
+.tiles { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.tile { flex: 1 1 7rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; }
+.tile__value { display: block; font-size: 1.6rem; font-weight: 650; line-height: 1.1; }
+.tile__label { display: block; color: var(--text-muted); font-size: 0.82rem; margin-top: 0.2rem; }
+.tile--failed .tile__value { color: var(--hazard); }
+.tile--pending .tile__value { color: var(--pending); }
+
+/* ------------------------------------------------------------------ badges */
+.badge { display: inline-block; font-size: 0.75rem; font-weight: 650; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid; vertical-align: middle; }
+.badge--hazard { color: var(--hazard); border-color: var(--hazard); }
+.badge--ok { color: var(--ok); border-color: var(--ok); }
+.badge--pending { color: var(--pending); border-color: var(--pending); }
+.badge--muted { color: var(--text-muted); border-color: var(--border); }
+
+/* ------------------------------------------------------------------ tables */
+/* Wide tables scroll inside their own container; the page body never scrolls sideways. */
+.table-scroll { overflow-x: auto; margin: 0 -0.35rem; }
+table.table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+.table th, .table td { text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap; }
+.table th { color: var(--text-muted); font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.table tbody tr:hover { background: var(--surface-2); }
+.table td.wrap-text { white-space: normal; min-width: 18rem; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ images */
+.hero { width: 100%; height: auto; border-radius: 8px; display: block; }
+.thumbs { display: grid; gap: 0.85rem; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
+.thumb { margin: 0; }
+.thumb img { width: 100%; height: auto; border-radius: 8px; display: block; background: var(--surface-2); }
+.thumb figcaption { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.35rem; }
+
+.mini-list { list-style: none; padding: 0; margin: 0.75rem 0 0; }
+.mini-list li { padding: 0.3rem 0; border-bottom: 1px solid var(--border); display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; }
+
+/* ------------------------------------------------------------------- forms */
+.form { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 1.25rem; }
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.field input, .field select { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.45rem 0.6rem; font: inherit; font-size: 0.95rem; }
+.button { background: var(--accent); color: var(--bg); border: 0; border-radius: 6px; padding: 0.5rem 1.1rem; font: inherit; font-weight: 650; cursor: pointer; }
+.button:hover { opacity: 0.9; }
+.button--ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent-dim); }
+
+/* ------------------------------------------------------------------- pager */
+.pager { display: flex; gap: 0.75rem; align-items: center; justify-content: center; margin-top: 1.25rem; }
+.pager__state { color: var(--text-muted); font-size: 0.9rem; }
+
+/* ------------------------------------------------------------------ notice */
+.notice { background: var(--surface-2); border-left: 3px solid var(--accent); padding: 0.85rem 1rem; border-radius: 0 6px 6px 0; margin-bottom: 1.25rem; }
+.notice--slow { border-left-color: var(--pending); }
+
+.problem { background: var(--surface-2); border-radius: 8px; padding: 0.9rem 1.1rem; margin: 1rem 0; }
+.problem__title { margin: 0 0 0.35rem; font-size: 1rem; }
+.problem__detail { margin: 0; color: var(--text-muted); }
+pre.command { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 0.9rem; overflow-x: auto; }
+
+.definitions { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.25rem; margin: 0; }
+.definitions dt { color: var(--text-muted); font-size: 0.9rem; }
+.definitions dd { margin: 0; }
+
+/* ------------------------------------------------------------------ footer */
+.footer { border-top: 1px solid var(--border); margin-top: 3rem; padding: 1.5rem 0 2.5rem; color: var(--text-muted); font-size: 0.9rem; }
+.footer__muted { color: var(--text-muted); opacity: 0.75; }

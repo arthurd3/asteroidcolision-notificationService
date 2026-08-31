@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.arthur.asteroid</groupId>
+    <artifactId>asteroid-platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>web-ui</artifactId>
+  <!-- war, not jar. Spring Boot's executable-jar layout cannot serve JSPs at all
+       (Boot reference, "JSP Limitations"): the pages live in the archive's document
+       root, which a jar does not have. An executable war works both with
+       `java -jar` and deployed to a standalone servlet container. This is the one
+       structural difference from the other two modules and the reason it exists. -->
+  <packaging>war</packaging>
+  <name>web-ui</name>
+  <description>Server-rendered JSP front end over asteroid-service and notification-service</description>
+
+  <properties>
+    <!-- spring-boot-starter-parent writes ${start-class} into the war manifest;
+         setting it keeps an unresolved placeholder out of MANIFEST.MF -->
+    <start-class>com.arthur.asteroid.webui.WebUiApplication</start-class>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    <!-- RestClient auto-config is its own starter in Boot 4 -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Embedded Tomcat marked provided so the same war can also be dropped into a
+         standalone Tomcat 11 without two copies of the container on the classpath.
+         Maven's nearest-wins makes this direct declaration override the compile
+         scope inherited transitively from spring-boot-starter-webmvc. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-tomcat</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- ======================== JSP ========================
+         The same three artifacts Boot's own spring-boot-smoke-test-web-jsp declares.
+         Versions come from the BOM: jasper tracks tomcat.version (11.0.24) and the
+         glassfish JSTL implementation is 3.0.1.
+
+         `provided`, not `compile`, for two reasons:
+           - spring-boot-maven-plugin's repackage puts provided artifacts under
+             WEB-INF/lib-provided, which `java -jar` loads and a standalone
+             container ignores, so neither ends up with two Jaspers;
+           - `spring-boot:run` keeps them anyway - AbstractRunMojo filters the
+             classpath with ExcludeTestScopeArtifactFilter only - so
+             `./mvnw -pl web-ui spring-boot:run` behaves like the other modules.
+
+         tomcat-embed-jasper brings org.eclipse.jdt:ecj, the compiler Jasper uses to
+         turn a .jsp into a servlet on first request. -->
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-jasper</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <!-- transitive of the implementation above; declared so the taglib URIs the JSPs
+         import have an obvious source in this file -->
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- ===================== test ===================== -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-restclient-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- standalone (shaded): plain org.wiremock:wiremock wants Jetty 11 while Boot 4
+         manages Jetty 12. Same reason as asteroid-service. -->
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>3.13.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- No maven-war-plugin configuration needed: since 3.1.0 the plugin defaults
+           failOnMissingWebXml to false when jakarta.servlet.annotation.WebServlet is
+           on the compile classpath, which tomcat-embed-core provides. There is no
+           src/main/webapp/WEB-INF/web.xml and there does not need to be. -->
+    </plugins>
+  </build>
+</project>
