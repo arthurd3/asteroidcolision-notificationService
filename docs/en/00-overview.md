@@ -75,8 +75,9 @@ collects them.
 **So is the commit history.** Each message explains why, not what. `git log` is worth
 reading.
 
-**And the mistakes are left in view.** Where something is unverified, it says so —
-see the DONKI storm and flare records, or `asteroid-service/src/test/resources/nasa/README-fixtures.md`.
+**And the working notes are left in view.** Where a fixture is a real capture rather
+than something written from documentation, it says so, and why that distinction changes
+what a test proves — see `asteroid-service/src/test/resources/nasa/README-fixtures.md`.
 Where a simpler alternative exists and was not taken, the reasoning is written down —
 see the EPIC image proxy in [document 02](02-nasa-apis.md). A teaching repository that
 hides its trade-offs teaches the wrong thing.

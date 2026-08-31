@@ -79,12 +79,12 @@ clash entirely.
 `src/test/resources/nasa/` rather than hand-written JSON. Writing JSON from
 documentation is how a record ends up mapping fields that do not exist.
 
-**Two of those fixtures are hand-written**, and the difference matters more than it
-looks. `README-fixtures.md` in that directory tabulates which are real captures and
-explains the failure mode: `ignoreUnknown` makes an *extra* field harmless but does
-nothing about a *missing* one, so a component whose name does not match what NASA sends
-deserialises to `null` silently — and a test that parses a hand-written fixture passes
-anyway. It also gives the exact commands to re-record them.
+All four fixtures are live captures. `README-fixtures.md` in that directory records
+that, and explains why provenance is worth writing down at all: `ignoreUnknown` makes an
+*extra* field harmless but does nothing about a *missing* one, so a component whose name
+does not match what NASA sends deserialises to `null` silently — and a test parsing a
+hand-written fixture passes anyway. Two of these were hand-written for a while, for
+exactly that reason, and the file says so. It also gives the commands to re-record them.
 
 ## `@WebMvcTest`, for the HTTP contract
 

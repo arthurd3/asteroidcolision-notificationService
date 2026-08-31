@@ -11,21 +11,13 @@ import java.util.Optional;
 /**
  * A disturbance of Earth's magnetic field, usually caused by an arriving CME.
  *
- * <p><strong>Unverified shape.</strong> Unlike {@link CoronalMassEjection}, whose
- * fields come from a captured live response, the components below are taken from
- * NASA's DONKI documentation. The API key available when this was written was
- * DEMO_KEY, which is capped at 30 requests an hour across every api.nasa.gov
- * endpoint and was exhausted verifying the other four APIs.
+ * <p>Verified against a live capture: every component below is a field DONKI really
+ * sends. {@code submissionTime}, {@code versionId} and {@code sentNotifications} are
+ * deliberately unmapped - nothing here displays them, and
+ * {@code @JsonIgnoreProperties} makes leaving them out free.
  *
- * <p>What that means in practice: {@code @JsonIgnoreProperties(ignoreUnknown = true)}
- * makes an extra field harmless, but a component whose name does not match what DONKI
- * actually sends will simply deserialise to null, silently. Nothing will throw. The
- * fixture in {@code src/test/resources/nasa/donki-gst.json} is hand-written for the
- * same reason, so the test proves the record parses that fixture and nothing more.
- *
- * <p>To settle it: put a real key in {@code .env}, run
- * {@code curl "https://api.nasa.gov/DONKI/GST?startDate=...&endDate=...&api_key=$NASA_API_KEY"},
- * save the response over the fixture, and fix whatever the test then reports.
+ * <p>{@code linkedEvents} is genuinely nullable rather than merely absent, which is
+ * why the accessor below defaults it. A storm with no identified cause is normal.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record GeomagneticStorm(

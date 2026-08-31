@@ -24,14 +24,14 @@ public interface NasaDonkiClient {
     /**
      * Geomagnetic storms that began within the window.
      *
-     * <p>Note the record's shape is unverified - see {@link GeomagneticStorm}.
+     * <p>Measured by the Kp index; see {@link GeomagneticStorm}.
      */
     List<GeomagneticStorm> geomagneticStorms(LocalDate from, LocalDate to);
 
     /**
      * Solar flares that began within the window.
      *
-     * <p>Note the record's shape is unverified - see {@link SolarFlare}.
+     * <p>Classified A/B/C/M/X by X-ray intensity; see {@link SolarFlare}.
      */
     List<SolarFlare> solarFlares(LocalDate from, LocalDate to);
 }

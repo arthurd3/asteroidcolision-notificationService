@@ -94,14 +94,23 @@ janela padrão. Errar isso parece código funcionando que devolve os eventos err
 parseado porque `ISO_OFFSET_DATE_TIME` trata segundos como opcionais; um padrão escrito à
 mão como `yyyy-MM-dd'T'HH:mm:ss'Z'` falha em todos os registros.
 
-> **Nota de honestidade.** `CoronalMassEjection` foi escrito a partir de uma captura
-> real. `GeomagneticStorm` e `SolarFlare` **não** — seus nomes de campo vêm da
-> documentação da NASA, porque o orçamento horário da `DEMO_KEY` foi gasto verificando as
-> outras APIs. `@JsonIgnoreProperties(ignoreUnknown = true)` torna um campo *extra*
-> inofensivo, mas não faz nada quanto a um campo *faltando*: um componente cujo nome não
-> bate desserializa como `null`, silenciosamente. Veja
-> `asteroid-service/src/test/resources/nasa/README-fixtures.md` para os comandos exatos
-> que resolvem isso.
+**Os três formatos de record estão verificados contra capturas reais**, e as fixtures em
+`asteroid-service/src/test/resources/nasa/` são respostas de verdade, reduzidas a alguns
+registros representativos.
+
+Vale dizer isso porque por um tempo dois deles não estavam. `GeomagneticStorm` e
+`SolarFlare` foram escritos a partir da documentação da NASA enquanto um limite de taxa
+da `DEMO_KEY` impedia a captura, e o código e a documentação diziam isso com todas as
+letras. Quando uma chave real ficou disponível, foram conferidos campo a campo: nenhuma
+divergência, mas valeu confirmar em vez de supor. O
+`@JsonIgnoreProperties(ignoreUnknown = true)` torna um campo *extra* inofensivo e não faz
+nada quanto a um *faltando* — um componente cujo nome não bate desserializa como `null`,
+silenciosamente, e um teste que parseia uma fixture escrita à mão passa mesmo assim.
+
+**Uma quarta armadilha, descoberta durante essa captura: o DONKI devolve 503
+transitórios.** Não é limite de taxa — é uma falha do upstream que funciona na
+retentativa. O que é uma boa propaganda para a política de retry do
+[documento 03](03-http-clients-and-resilience.md).
 
 ## EPIC — Earth Polychromatic Imaging Camera
 

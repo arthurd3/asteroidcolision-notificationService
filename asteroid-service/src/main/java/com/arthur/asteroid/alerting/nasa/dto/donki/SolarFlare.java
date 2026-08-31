@@ -9,15 +9,15 @@ import java.util.List;
 /**
  * A solar flare: a sudden brightening on the Sun, classified by X-ray intensity.
  *
- * <p><strong>Unverified shape.</strong> As with {@link GeomagneticStorm}, these
- * component names come from NASA's DONKI documentation rather than from a captured
- * response, because DEMO_KEY's 30-per-hour budget was spent verifying the other
- * APIs. A mismatched name deserialises to null silently rather than failing. See
- * {@link GeomagneticStorm} for how to settle it.
+ * <p>Verified against a live capture of 132 flares: every component below is a field
+ * DONKI really sends, and the observed {@code classType} values span B, C, M and X.
  *
  * @param classType A, B, C, M or X followed by a magnitude, e.g. "M1.2". The scale
  *                  is logarithmic: an X flare is ten times a M and a hundred times a C
- * @param endTime   null while a flare is still in progress at the time DONKI is asked
+ * @param endTime   null while a flare is still in progress at the time DONKI is asked.
+ *                  Every record in the sample capture had one, so this is a documented
+ *                  possibility rather than an observed one - but the field is nullable
+ *                  either way, so nothing depends on which
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SolarFlare(

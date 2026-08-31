@@ -139,53 +139,86 @@ class RestNasaDonkiClientTest {
 
     // ------------------------------------------------------------------ GST / FLR
     //
-    // These two parse HAND-WRITTEN fixtures, not captured responses, so they prove the
-    // records parse those files and nothing more. If a component name does not match
-    // what DONKI really sends it deserialises to null in production and these tests
-    // still pass. See src/test/resources/nasa/README-fixtures.md.
+    // Both fixtures are live captures, trimmed to records that keep the awkward cases:
+    // a storm with fourteen Kp readings beside one with a single reading, and flares
+    // of class C, M and X including one with null linkedEvents.
 
     @Test
-    @DisplayName("parses the geomagnetic-storm fixture, including the linked CME")
+    @DisplayName("parses the geomagnetic-storm capture, including the CMEs that caused it")
     void parsesGeomagneticStorms() throws IOException {
         stubPath(RestNasaDonkiClient.GST_PATH, fixture("nasa/donki-gst.json"));
 
         final List<GeomagneticStorm> storms =
-                client.geomagneticStorms(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+                client.geomagneticStorms(LocalDate.of(2025, 9, 1), LocalDate.of(2026, 8, 31));
 
-        assertThat(storms).singleElement().satisfies(storm -> {
-            assertThat(storm.gstId()).isEqualTo("2026-08-12T18:00:00-GST-001");
-            assertThat(storm.startTime()).isEqualTo(OffsetDateTime.parse("2026-08-12T18:00Z"));
-            assertThat(storm.kpIndexReadings()).hasSize(3);
-            // the relationship worth having: a storm points back at the CME that caused it
-            assertThat(storm.linkedEvents()).singleElement()
-                    .extracting(e -> e.activityId()).isEqualTo("2026-08-11T03:36:00-CME-001");
-            assertThat(storm.peakKpIndex()).contains(7.33);
+        assertThat(storms).hasSize(2);
+        assertThat(storms.getFirst()).satisfies(storm -> {
+            assertThat(storm.gstId()).isEqualTo("2026-01-19T18:00:00-GST-001");
+            assertThat(storm.startTime()).isEqualTo(OffsetDateTime.parse("2026-01-19T18:00Z"));
+            // a storm is tracked as it develops, so one carries many readings
+            assertThat(storm.kpIndexReadings()).hasSize(14);
+            assertThat(storm.peakKpIndex()).contains(8.67);
+            // The relationship worth having: a storm points back at what caused it.
+            // Asserted by shape rather than by a literal id - DONKI links a storm to a
+            // mix of CME, IPS and MPC activities, and pinning the exact set would make
+            // this test about one capture rather than about the mapping.
+            assertThat(storm.linkedEvents()).hasSize(3)
+                    .extracting(e -> e.activityId())
+                    .allSatisfy(id -> assertThat(id).matches("\\d{4}-\\d{2}-\\d{2}T.*-[A-Z]{3}-\\d{3}"))
+                    .anySatisfy(id -> assertThat(id).endsWith("-CME-001"));
         });
     }
 
     @Test
-    @DisplayName("parses the solar-flare fixture, including a flare still in progress")
+    @DisplayName("a storm can be reported from a single Kp reading")
+    void parsesStormWithOneReading() throws IOException {
+        stubPath(RestNasaDonkiClient.GST_PATH, fixture("nasa/donki-gst.json"));
+
+        assertThat(client.geomagneticStorms(LocalDate.now(), LocalDate.now()).get(1))
+                .satisfies(storm -> {
+                    assertThat(storm.kpIndexReadings()).hasSize(1);
+                    assertThat(storm.peakKpIndex()).contains(6.0);
+                });
+    }
+
+    @Test
+    @DisplayName("parses the solar-flare capture across classes C, M and X")
     void parsesSolarFlares() throws IOException {
         stubPath(RestNasaDonkiClient.FLR_PATH, fixture("nasa/donki-flr.json"));
 
         final List<SolarFlare> flares =
-                client.solarFlares(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+                client.solarFlares(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 8, 31));
 
-        assertThat(flares).hasSize(2);
+        assertThat(flares).hasSize(3);
+        assertThat(flares).extracting(SolarFlare::classLetter).containsExactly("X", "M", "C");
+
         assertThat(flares.getFirst()).satisfies(flare -> {
-            assertThat(flare.flrId()).isEqualTo("2026-08-11T02:58:00-FLR-001");
-            assertThat(flare.classType()).isEqualTo("M1.4");
-            assertThat(flare.classLetter()).isEqualTo("M");
-            assertThat(flare.activeRegionNum()).isEqualTo(14208);
-            assertThat(flare.peakTime()).isEqualTo(OffsetDateTime.parse("2026-08-11T03:14Z"));
+            assertThat(flare.flrId()).isEqualTo("2026-06-03T11:19:00-FLR-001");
+            assertThat(flare.classType()).isEqualTo("X1.0");
+            assertThat(flare.activeRegionNum()).isEqualTo(14455);
+            assertThat(flare.sourceLocation()).isNotBlank();
+            // seconds-less timestamps, parsed only because ISO_OFFSET_DATE_TIME
+            // treats seconds as optional
+            assertThat(flare.beginTime()).isEqualTo(OffsetDateTime.parse("2026-06-03T11:19Z"));
+            assertThat(flare.peakTime()).isEqualTo(OffsetDateTime.parse("2026-06-03T11:28Z"));
+            assertThat(flare.endTime()).isEqualTo(OffsetDateTime.parse("2026-06-03T11:35Z"));
+            assertThat(flare.linkedEvents()).singleElement()
+                    .extracting(e -> e.activityId()).isEqualTo("2026-06-03T11:48:00-CME-001");
         });
-        assertThat(flares.get(1)).satisfies(flare -> {
-            // a flare that had not finished when DONKI was asked has no endTime
-            assertThat(flare.endTime()).isNull();
-            assertThat(flare.activeRegionNum()).isNull();
-            assertThat(flare.linkedEvents()).isEmpty();
-            assertThat(flare.classLetter()).isEqualTo("X");
-        });
+    }
+
+    @Test
+    @DisplayName("linkedEvents is null, not absent, when a flare caused nothing")
+    void handlesNullLinkedEvents() throws IOException {
+        // DONKI sends "linkedEvents": null rather than omitting the field, so the
+        // accessor has to default it or every unlinked flare NPEs in the view
+        stubPath(RestNasaDonkiClient.FLR_PATH, fixture("nasa/donki-flr.json"));
+
+        assertThat(client.solarFlares(LocalDate.now(), LocalDate.now()).get(1))
+                .satisfies(flare -> {
+                    assertThat(flare.classType()).isEqualTo("M1.8");
+                    assertThat(flare.linkedEvents()).isEmpty();
+                });
     }
 
     @Test

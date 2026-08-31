@@ -92,14 +92,22 @@ Getting this wrong looks like working code returning the wrong events.
 because `ISO_OFFSET_DATE_TIME` treats seconds as optional; a hand-written
 `yyyy-MM-dd'T'HH:mm:ss'Z'` pattern fails on every record.
 
-> **Honesty note.** `CoronalMassEjection` was written from a live capture.
-> `GeomagneticStorm` and `SolarFlare` were **not** — their field names come from
-> NASA's documentation, because `DEMO_KEY`'s hourly budget was spent verifying the
-> other APIs. `@JsonIgnoreProperties(ignoreUnknown = true)` makes an *extra* field
-> harmless but does nothing about a *missing* one: a component whose name does not
-> match deserialises to `null`, silently. See
-> `asteroid-service/src/test/resources/nasa/README-fixtures.md` for the exact commands
-> to settle it.
+**All three record shapes are verified against live captures**, and the fixtures in
+`asteroid-service/src/test/resources/nasa/` are real responses trimmed to a few
+representative records.
+
+That is worth stating because for a while two of them were not. `GeomagneticStorm` and
+`SolarFlare` were written from NASA's documentation while a `DEMO_KEY` rate limit made
+capture impossible, and the code and docs said so in as many words. When a real key
+became available they were checked field by field: no mismatches, but that was worth
+confirming rather than assuming. `@JsonIgnoreProperties(ignoreUnknown = true)` makes an
+*extra* field harmless and does nothing about a *missing* one — a component whose name
+does not match deserialises to `null`, silently, and a test parsing a hand-written
+fixture passes anyway.
+
+**A fourth trap, found during that capture: DONKI returns transient 503s.** Not a rate
+limit — an upstream failure that succeeds on retry. Which is a fair advertisement for
+the retry policy in [document 03](03-http-clients-and-resilience.md).
 
 ## EPIC — Earth Polychromatic Imaging Camera
 

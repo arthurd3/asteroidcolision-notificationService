@@ -5,38 +5,55 @@ network and no API key.
 
 | File | Provenance |
 |---|---|
-| `donki-cme.json` | **Captured from the live API.** Field names, the seconds-less `startTime` and the null `activeRegionNum` are all as NASA sent them. |
-| `epic-natural.json` | **Captured from the live API.** Note `date` is `"2026-08-29 00:41:06"` — a space, not the `T` ISO-8601 requires. |
-| `donki-gst.json` | **Hand-written from NASA's documentation — NOT captured.** |
-| `donki-flr.json` | **Hand-written from NASA's documentation — NOT captured.** |
+| `donki-cme.json` | Captured from the live API. |
+| `donki-gst.json` | Captured from the live API. |
+| `donki-flr.json` | Captured from the live API. |
+| `epic-natural.json` | Captured from the live API. |
 
-## Why the last two matter
+All four are real responses, trimmed to a few representative records. They keep the
+details that matter and that a hand-written file would get wrong:
+
+- **seconds-less DONKI timestamps** (`2026-05-04T01:13Z`) — these parse only because
+  `ISO_OFFSET_DATE_TIME` treats seconds as optional;
+- **EPIC's non-ISO `date`** (`2026-08-29 00:41:06`) — a space where ISO-8601 requires
+  a `T`, which is why `EpicImage` needs an explicit `@JsonFormat` pattern;
+- **genuinely null fields** — `activeRegionNum` on a CME with no identified source,
+  `linkedEvents` on an unlinked solar flare;
+- **the range that matters** — flares of class C, M and X, and a geomagnetic storm
+  with fourteen Kp readings alongside one with a single reading.
+
+## Why the provenance is recorded at all
 
 `@JsonIgnoreProperties(ignoreUnknown = true)` makes an *extra* field harmless. It does
-nothing about a *missing* one: if `GeomagneticStorm` names a component DONKI does not
-actually send, it deserialises to `null`, silently, and the test still passes — because
-the test parses this hand-written file rather than a real response.
+nothing about a *missing* one: if a record names a component NASA does not actually
+send, it deserialises to `null`, silently, and a test that parses a hand-written
+fixture passes anyway.
 
-So these two fixtures prove the records parse *these files*, and nothing more.
+`donki-gst.json` and `donki-flr.json` were hand-written from NASA's documentation for
+a while, precisely because of a `DEMO_KEY` rate limit, and this file said so. They have
+since been replaced with live captures and the records checked field by field against
+them — no mismatches were found, but that was worth confirming rather than assuming.
 
-## Settling it
+**If you add a fixture, say where it came from.** The distinction is invisible in the
+JSON itself and it changes what the test proves.
 
-DEMO_KEY is capped at 30 requests/hour across every api.nasa.gov endpoint, which is why
-they were not captured. With a real key from <https://api.nasa.gov>:
+## Re-recording
 
 ```bash
 set -a; . ./.env; set +a
-S=$(date -u -d '-30 days' +%F); E=$(date -u +%F)
+S=$(date -u -d '-120 days' +%F); E=$(date -u +%F)
 
-curl -s "https://api.nasa.gov/DONKI/GST?startDate=$S&endDate=$E&api_key=$NASA_API_KEY" \
-  | python3 -m json.tool > asteroid-service/src/test/resources/nasa/donki-gst.json
-
-curl -s "https://api.nasa.gov/DONKI/FLR?startDate=$S&endDate=$E&api_key=$NASA_API_KEY" \
-  | python3 -m json.tool > asteroid-service/src/test/resources/nasa/donki-flr.json
-
-./mvnw -pl asteroid-service test -Dtest=RestNasaDonkiClientTest
+curl -s "https://api.nasa.gov/DONKI/CME?startDate=$S&endDate=$E&api_key=$NASA_API_KEY" | python3 -m json.tool
+curl -s "https://api.nasa.gov/DONKI/GST?startDate=$S&endDate=$E&api_key=$NASA_API_KEY" | python3 -m json.tool
+curl -s "https://api.nasa.gov/DONKI/FLR?startDate=$S&endDate=$E&api_key=$NASA_API_KEY" | python3 -m json.tool
+curl -s "https://api.nasa.gov/EPIC/api/natural?api_key=$NASA_API_KEY"                  | python3 -m json.tool
 ```
 
-Then fix whatever the test reports, delete the "unverified" paragraphs from
-`GeomagneticStorm` and `SolarFlare`, and update the table above. Allow a couple of
-minutes — DONKI is slow.
+Trim to a few records that keep the awkward cases above, then run:
+
+```bash
+./mvnw -pl asteroid-service test -Dtest='RestNasaDonkiClientTest+RestNasaEpicClientTest'
+```
+
+DONKI is slow — allow a couple of minutes — and it returns a transient `503` often
+enough that a retry is worth building into any script that does this.

@@ -73,8 +73,9 @@ armadilhas da migração Spring Boot 3 → 4 que custaram tempo real para descob
 **O histórico de commits também.** Cada mensagem explica o porquê, não o quê. Vale ler
 `git log`.
 
-**E os erros ficam à vista.** Onde algo não foi verificado, está escrito que não foi —
-veja os records de tempestade e explosão solar do DONKI, ou
+**E as notas de trabalho ficam à vista.** Onde uma fixture é uma captura real em vez de
+algo escrito a partir da documentação, isso está registrado, junto com o motivo de essa
+distinção mudar o que um teste prova — veja
 `asteroid-service/src/test/resources/nasa/README-fixtures.md`. Onde existe uma
 alternativa mais simples que não foi adotada, o raciocínio está registrado — veja o
 proxy de imagens do EPIC no [documento 02](02-nasa-apis.md). Um repositório didático que

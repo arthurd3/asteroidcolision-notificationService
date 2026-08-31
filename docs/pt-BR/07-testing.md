@@ -79,12 +79,13 @@ evita o conflito por completo.
 `src/test/resources/nasa/` em vez de JSON escrito à mão. Escrever JSON a partir da
 documentação é como um record acaba mapeando campos que não existem.
 
-**Duas dessas fixtures foram escritas à mão**, e a diferença importa mais do que parece. O
-`README-fixtures.md` naquele diretório tabula quais são capturas reais e explica o modo de
-falha: `ignoreUnknown` torna um campo *extra* inofensivo, mas não faz nada quanto a um
-campo *faltando*, então um componente cujo nome não bate com o que a NASA envia
-desserializa como `null` silenciosamente — e um teste que parseia uma fixture escrita à
-mão passa mesmo assim. Ele também dá os comandos exatos para regravá-las.
+As quatro fixtures são capturas reais. O `README-fixtures.md` naquele diretório registra
+isso e explica por que a procedência vale ser escrita: `ignoreUnknown` torna um campo
+*extra* inofensivo, mas não faz nada quanto a um *faltando*, então um componente cujo nome
+não bate com o que a NASA envia desserializa como `null` silenciosamente — e um teste que
+parseia uma fixture escrita à mão passa mesmo assim. Duas destas foram escritas à mão por
+um tempo, exatamente por isso, e o arquivo diz. Ele também dá os comandos para
+regravá-las.
 
 ## `@WebMvcTest`, para o contrato HTTP
 

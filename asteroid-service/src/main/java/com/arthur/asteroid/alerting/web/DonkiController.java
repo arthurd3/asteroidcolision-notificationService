@@ -57,7 +57,7 @@ public class DonkiController {
     /**
      * Geomagnetic storms in the window.
      *
-     * <p>The response shape is unverified - see {@link GeomagneticStorm}.
+     * <p>Each storm links back to the events that caused it.
      */
     @GetMapping("/gst")
     public ResponseEntity<List<GeomagneticStorm>> geomagneticStorms(
@@ -71,7 +71,7 @@ public class DonkiController {
     /**
      * Solar flares in the window.
      *
-     * <p>The response shape is unverified - see {@link SolarFlare}.
+     * <p>{@code endTime} is null while a flare is still in progress.
      */
     @GetMapping("/flr")
     public ResponseEntity<List<SolarFlare>> solarFlares(

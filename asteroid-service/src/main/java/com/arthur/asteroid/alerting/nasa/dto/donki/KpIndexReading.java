@@ -11,8 +11,9 @@ import java.time.OffsetDateTime;
  * where power grids and satellites are affected, so the maximum reading across a
  * storm is the number worth surfacing.
  *
- * <p><strong>Field names are from NASA's DONKI documentation, not from a captured
- * response.</strong> See {@link GeomagneticStorm}.
+ * <p>Verified against a live capture: {@code observedTime}, {@code kpIndex} and
+ * {@code source} (e.g. "NOAA") are what DONKI sends. A single storm can carry a
+ * dozen or more readings as it develops.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record KpIndexReading(
